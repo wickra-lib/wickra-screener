@@ -1,0 +1,25 @@
+[package]
+name = "wickra-screener-python"
+description = "Python bindings for wickra-screener: the data-driven multi-symbol scan core."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+readme = "README.md"
+keywords.workspace = true
+categories.workspace = true
+publish = false
+
+[lib]
+name = "_wickra_screener"
+crate-type = ["cdylib"]
+
+[lints]
+workspace = true
+
+[dependencies]
+screener-core = { workspace = true }
+pyo3 = { version = "0.29", features = ["extension-module", "abi3-py39"] }
