@@ -1,0 +1,6 @@
+# OSV-Scanner suppressions (VEX record). Consumed by OSV-Scanner and the
+# OpenSSF Scorecard Vulnerabilities check. Each entry would be an advisory
+# assessed as not affecting wickra-screener; this mirrors the cargo-deny
+# `ignore` list in deny.toml at the OSV layer.
+#
+# Keep in lock-step with deny.toml's [advisories].ignore. No suppressions yet.
