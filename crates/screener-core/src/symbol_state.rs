@@ -1,9 +1,5 @@
 //! Per-symbol state: the indicators a spec needs, folded one candle at a time,
 //! plus the current and previous candle for price-field expressions.
-//!
-//! Consumed by `universe` (P-SCR-1.7); the module-level `dead_code` allow is
-//! removed once that module wires it in.
-#![allow(dead_code)]
 
 use crate::error::Result;
 use crate::expr::{Expr, PriceField};
