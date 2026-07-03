@@ -1,0 +1,82 @@
+# Wickra Screener — workspace.
+# A parallel multi-symbol screener built as one data-driven core
+# (`screener-core`): a serde condition tree (ScanSpec) is folded over each
+# symbol's history with 514 O(1) streaming indicators, evaluated per bar, and
+# scanned in parallel (rayon) or sequentially (the WASM fallback), byte-for-byte
+# identical. The core is exposed as a JSON-over-C-ABI data API in ten languages,
+# mirroring the Wickra tiering: Rust core -> native Python/Node/WASM + a C ABI
+# hub for C/C++/C#/Go/Java/R.
+#
+# The `members` list grows as crates are added, phase by phase; the final set is:
+#   crates/screener-core, crates/screener-cli, crates/screener-bench,
+#   bindings/c, bindings/python, bindings/node, bindings/wasm
+
+[workspace]
+resolver = "2"
+members = []
+# The fuzz crate is its own (detached) workspace — cargo-fuzz builds it on a
+# nightly toolchain with sanitizer flags.
+exclude = ["fuzz"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.86"
+license = "MIT OR Apache-2.0"
+authors = ["wickra-lib"]
+repository = "https://github.com/wickra-lib/wickra-screener"
+homepage = "https://wickra.org"
+readme = "README.md"
+keywords = ["trading", "screener", "indicators", "streaming", "finance"]
+categories = ["finance", "command-line-utilities"]
+
+[workspace.dependencies]
+# Wickra ecosystem. wickra-core and wickra-data ship on crates.io; the exchange
+# facade is consumed from git until its first crates.io release (its tag is
+# USER-GO gated) and is used only by the optional `live` universe feature. A
+# `version` is pinned alongside `git` so the dependency is not a wildcard
+# (cargo-deny's `bans.wildcards = deny`).
+wickra-core = "0.9"
+wickra-data = "0.9"
+wickra-exchange = { git = "https://github.com/wickra-lib/wickra-exchange", version = "0.1" }
+# Serialization — the data-driven boundary (spec/command/report as JSON).
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+# Exact decimal arithmetic where price/qty precision matters.
+rust_decimal = { version = "1", features = ["serde"] }
+thiserror = "2"
+# Data-parallel scan across symbols.
+rayon = "1"
+clap = { version = "4", features = ["derive"] }
+# C ABI header generation.
+cbindgen = "0.27"
+# Test/dev.
+criterion = "0.5"
+proptest = "1"
+
+[workspace.lints.rust]
+# The core and all bindings are safe Rust; the C ABI hub re-allows unsafe
+# locally (it must call across the FFI boundary).
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+# Allowed pedantic lints (same precedent as the wickra core).
+cast_precision_loss = "allow"
+cast_sign_loss = "allow"
+cast_possible_truncation = "allow"
+module_name_repetitions = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+must_use_candidate = "allow"
+too_many_lines = "allow"
+similar_names = "allow"
+
+[profile.release]
+# Panics must never unwind across the C ABI boundary: abort instead.
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
