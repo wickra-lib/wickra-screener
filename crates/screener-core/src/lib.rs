@@ -9,6 +9,7 @@
 //! re-export block lands in `lib.rs` (P-SCR-1.12).
 
 mod error;
+mod eval;
 mod expr;
 mod indicator_set;
 mod spec;
