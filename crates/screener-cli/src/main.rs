@@ -1,15 +1,22 @@
 //! The `wickra-screener` reference CLI.
 //!
-//! Loads a `ScanSpec` and a directory of per-symbol CSV candle files, runs a
-//! scan through `screener-core`, and prints the report as text or JSON. The run
-//! logic and glue are filled in over P-SCR-2.3 to 2.4.
+//! Loads a `ScanSpec` and a universe of candles (a directory of CSV files or a
+//! JSON dataset on stdin), runs a scan through `screener-core`, and prints the
+//! report as text or JSON.
 
 mod args;
+mod run;
 
 use args::Args;
 use clap::Parser;
 
 fn main() {
-    let _args = Args::parse();
-    // The scan run and output rendering are wired in over P-SCR-2.3 to 2.4.
+    let args = Args::parse();
+    match run::run(&args) {
+        Ok(output) => print!("{output}"),
+        Err(err) => {
+            eprintln!("wickra-screener: {err}");
+            std::process::exit(1);
+        }
+    }
 }
