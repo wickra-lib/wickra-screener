@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Wickra.Screener.Example</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../../bindings/csharp/WickraScreener/WickraScreener.csproj" />
+  </ItemGroup>
+
+  <!--
+    The DllImportResolver in the binding probes the Cargo target/ tree, so
+    `cargo build -p wickra-screener-c` is enough. This copies the native library
+    next to the example as a belt-and-suspenders fallback.
+  -->
+  <ItemGroup>
+    <Content Include="../../../target/release/wickra_screener.dll" Condition="Exists('../../../target/release/wickra_screener.dll')">
+      <Link>wickra_screener.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="../../../target/release/libwickra_screener.so" Condition="Exists('../../../target/release/libwickra_screener.so')">
+      <Link>libwickra_screener.so</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="../../../target/release/libwickra_screener.dylib" Condition="Exists('../../../target/release/libwickra_screener.dylib')">
+      <Link>libwickra_screener.dylib</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>
