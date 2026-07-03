@@ -1,0 +1,16 @@
+Package: wickrascreener
+Type: Package
+Title: Data-Driven Multi-Symbol Scan Core
+Version: 0.1.0
+Authors@R: person("kingchenc", role = c("aut", "cre"), email = "support@wickra.org")
+Description: R bindings for wickra-screener over its C ABI hub: build a Screener
+    from a spec JSON, drive it with command JSON and read back scan reports - the
+    same protocol as the CLI and every other binding.
+License: MIT + file LICENSE | Apache License 2.0
+URL: https://github.com/wickra-lib/wickra-screener
+BugReports: https://github.com/wickra-lib/wickra-screener/issues
+Encoding: UTF-8
+NeedsCompilation: yes
+SystemRequirements: the wickra-screener C ABI shared library (WKSCREEN_LIB) and
+    its header (WKSCREEN_INC).
+RoxygenNote: 7.3.2
