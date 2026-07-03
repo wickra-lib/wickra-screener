@@ -10,6 +10,8 @@
 
 mod error;
 mod expr;
+mod spec;
 
 pub use error::{Error, Result};
 pub use expr::{Expr, PriceField};
+pub use spec::{Comparator, Condition, CsMetric, RankSpec, ScanSpec};
