@@ -1,10 +1,6 @@
 //! The universe of symbols: one [`SymbolState`] each, plus the cross-section
 //! reductions (rank, percentile, z-score) that need every symbol of a bar at
 //! once.
-//!
-//! Consumed by `eval` (P-SCR-1.8); the module-level `dead_code` allow is removed
-//! once that module wires it in.
-#![allow(dead_code)]
 
 use crate::error::Result;
 use crate::expr::Expr;
