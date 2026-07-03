@@ -12,6 +12,7 @@ mod error;
 mod expr;
 mod indicator_set;
 mod spec;
+mod symbol_state;
 
 pub use error::{Error, Result};
 pub use expr::{Expr, PriceField};

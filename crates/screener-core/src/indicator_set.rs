@@ -5,10 +5,6 @@
 //! name -> indicator resolver in the ecosystem. Each resolved indicator is an
 //! object-safe `EvalIndicator`; the screener drives it with a candle-only
 //! [`BarInput`] (no reference series, derivatives, order book or trades).
-//!
-//! Consumed by `symbol_state` (P-SCR-1.6); the module-level `dead_code` allow is
-//! removed once that module wires it in.
-#![allow(dead_code)]
 
 use crate::error::{Error, Result};
 use crate::expr::Expr;
