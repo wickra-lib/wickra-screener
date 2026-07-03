@@ -19,7 +19,7 @@ default = ["parallel"]
 parallel = ["screener-core/parallel"]
 
 [dependencies]
-screener-core = { path = "../screener-core", default-features = false }
+screener-core = { path = "../screener-core", version = "0.1.0", default-features = false }
 
 [dev-dependencies]
 criterion.workspace = true
