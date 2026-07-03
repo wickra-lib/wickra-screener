@@ -79,3 +79,23 @@ cargo test -p screener-core --test golden -- --ignored --nocapture
 Run it once to bless (writes the missing `expected/*.json`), review the diff, and
 commit. Regenerate the CSV universe and `data.json` only from the formula above —
 never by editing the files.
+
+## Cross-language verification
+
+Every binding replays the same fixtures and asserts byte equality against
+`expected/*.json`, so the golden is the cross-language contract:
+
+| Binding | Test | Verified |
+|---------|------|----------|
+| Rust core | `tests/golden.rs` | parallel + sequential |
+| Python | `tests/test_golden.py` | locally |
+| Node.js | `__tests__/golden.test.js` | locally |
+| Go | `golden_test.go` | locally |
+| .NET | `GoldenTests.cs` | locally |
+| Java | `GoldenTest.java` | locally |
+| R | `tests/run_tests.R` | CI |
+
+A binding feeds `data.json` to a `scan` command and compares the returned string
+to `expected/<spec>.json`. Byte equality holds regardless of how each language
+serializes the input, because the core normalizes the scan and returns its
+`command_json` string verbatim.
