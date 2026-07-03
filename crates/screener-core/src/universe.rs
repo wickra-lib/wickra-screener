@@ -138,6 +138,11 @@ mod tests {
         }
     }
 
+    /// Approximate equality for the exact small metric values under test.
+    fn approx(a: f64, b: f64) -> bool {
+        (a - b).abs() < 1e-12
+    }
+
     fn price_spec() -> ScanSpec {
         // A price-only condition: no indicators, so symbols are ready after one bar.
         ScanSpec {
@@ -177,9 +182,9 @@ mod tests {
             field: PriceField::Close,
         };
         let rank = u.cross_section(&close, CsMetric::Rank);
-        assert_eq!(rank["C"], 1.0);
-        assert_eq!(rank["B"], 2.0);
-        assert_eq!(rank["A"], 3.0);
+        assert!(approx(rank["C"], 1.0));
+        assert!(approx(rank["B"], 2.0));
+        assert!(approx(rank["A"], 3.0));
     }
 
     #[test]
@@ -189,9 +194,9 @@ mod tests {
             field: PriceField::Close,
         };
         let pct = u.cross_section(&close, CsMetric::PercentileRank);
-        assert_eq!(pct["A"], 0.0);
-        assert_eq!(pct["B"], 0.5);
-        assert_eq!(pct["C"], 1.0);
+        assert!(approx(pct["A"], 0.0));
+        assert!(approx(pct["B"], 0.5));
+        assert!(approx(pct["C"], 1.0));
     }
 
     #[test]
