@@ -10,6 +10,7 @@
 
 mod error;
 mod expr;
+mod indicator_set;
 mod spec;
 
 pub use error::{Error, Result};
