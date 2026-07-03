@@ -8,6 +8,7 @@
 //! The public surface is assembled module by module through P-SCR-1; the final
 //! re-export block lands in `lib.rs` (P-SCR-1.12).
 
+mod config;
 mod error;
 mod eval;
 mod expr;
@@ -18,6 +19,7 @@ mod spec;
 mod symbol_state;
 mod universe;
 
+pub use config::Config;
 pub use error::{Error, Result};
 pub use expr::{Expr, PriceField};
 pub use scan::{scan_batch, ScanReport, ScanResult};
