@@ -22,3 +22,17 @@ test("Screener exposes command and version", () => {
     );
   }
 });
+
+// Strict parity: pin the exact public surface so a stray export (or a dropped
+// one) fails here, matching the exact-surface guards in the Python and R
+// bindings.
+test("module surface is exactly {Screener, version}", () => {
+  assert.deepStrictEqual(Object.keys(wickra).sort(), ["Screener", "version"]);
+});
+
+test("Screener surface is exactly {command, version}", () => {
+  const methods = Object.getOwnPropertyNames(wickra.Screener.prototype)
+    .filter((name) => name !== "constructor")
+    .sort();
+  assert.deepStrictEqual(methods, ["command", "version"]);
+});
