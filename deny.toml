@@ -1,0 +1,44 @@
+# cargo-deny configuration — supply-chain gate (advisories, licenses, bans, sources).
+
+[advisories]
+version = 2
+yanked = "deny"
+# Suppressed advisories (assessed as not affecting wickra-screener). Keep in
+# lock-step with osv-scanner.toml.
+ignore = []
+
+[licenses]
+version = 2
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Unicode-3.0",
+    "Zlib",
+    "MPL-2.0",
+]
+confidence-threshold = 0.93
+
+# Scoped license exceptions for individual permissive / public-domain crates:
+#   - webpki-roots (CDLA-Permissive-2.0): the Mozilla CA certificate bundle as
+#     data, pulled in transitively by the exchange's rustls TLS stack (only
+#     under the optional `live` universe feature).
+exceptions = [
+    { allow = ["CDLA-Permissive-2.0"], crate = "webpki-roots" },
+]
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+
+# The exchange facade is consumed as a git dependency until its first crates.io
+# release; it lives under the project's own GitHub org.
+[sources.allow-org]
+github = ["wickra-lib"]
