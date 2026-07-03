@@ -39,6 +39,11 @@ categories = ["finance", "command-line-utilities"]
 wickra-core = "0.9"
 wickra-data = "0.9"
 wickra-exchange = { git = "https://github.com/wickra-lib/wickra-exchange", version = "0.1" }
+# The only name -> indicator registry in the ecosystem: the backtester's factory
+# resolves any of the 514 indicators by name + params into an object-safe
+# EvalIndicator. Consumed from git until its first crates.io release; a `version`
+# is pinned alongside `git` so it is not a wildcard (cargo-deny bans.wildcards).
+wickra-backtest-core = { git = "https://github.com/wickra-lib/wickra-backtest", version = "0.1" }
 # Workspace-internal crate, referenced by the CLI, bench and bindings.
 screener-core = { version = "0.1.0", path = "crates/screener-core" }
 # Serialization — the data-driven boundary (spec/command/report as JSON).

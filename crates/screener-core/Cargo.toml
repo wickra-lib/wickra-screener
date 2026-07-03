@@ -25,7 +25,10 @@ parallel = ["dep:rayon"]
 live = ["dep:wickra-exchange"]
 
 [dependencies]
-# Streaming indicators (514 O(1) indicators) resolved by name + params.
+# Streaming indicators (514 O(1) indicators) resolved by name + params via the
+# backtester's registry factory (the only name -> indicator resolver); it pulls
+# in wickra-core transitively.
+wickra-backtest-core.workspace = true
 wickra-core.workspace = true
 # Candle + CSV loading for the universe data.
 wickra-data.workspace = true
