@@ -2737,6 +2737,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "wickra-screener-example"
+version = "0.1.0"
+dependencies = [
+ "screener-core",
+ "serde_json",
+]
+
+[[package]]
 name = "wickra-screener-node"
 version = "0.1.0"
 dependencies = [
