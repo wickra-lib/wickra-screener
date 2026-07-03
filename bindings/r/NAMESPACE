@@ -1,0 +1,4 @@
+useDynLib(wickrascreener, .registration = TRUE, .fixes = "C_")
+export(wkscreen_version)
+export(wkscreen_new)
+export(wkscreen_command)

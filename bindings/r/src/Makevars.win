@@ -1,0 +1,4 @@
+# On Windows the C ABI DLL is linked directly (mingw resolves the import stubs
+# from wickra_screener.dll); the loader finds it via PATH at run time.
+PKG_CPPFLAGS = -I$(WKSCREEN_INC)
+PKG_LIBS = -L$(WKSCREEN_LIB) -l:wickra_screener.dll
