@@ -1,0 +1,8 @@
+# Clippy thresholds. Lint levels (clippy::all / pedantic) live in the workspace
+# Cargo.toml under [workspace.lints]; this file holds configurable thresholds.
+too-many-arguments-threshold = 8
+
+# Finance / indicator identifiers with embedded capitals (and O(1)) that the
+# doc_markdown lint would otherwise flag as un-backticked identifiers. `..`
+# keeps clippy's default allowlist.
+doc-valid-idents = ["RSI", "ROC", "MACD", "OHLCV", "ScanSpec", "O(1)", "WASM", ".."]
