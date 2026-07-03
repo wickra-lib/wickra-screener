@@ -1,0 +1,7 @@
+# Python dev dependencies for the binding CI (build + test). Compiled to a
+# hash-locked ci-dev.txt with:
+#   uv pip compile --generate-hashes .github/requirements/ci-dev.in -o .github/requirements/ci-dev.txt
+# The screener's Python tests only build the extension and parse JSON reports,
+# so no array/math dependency (numpy) is needed — one lockfile covers py39-py313.
+maturin
+pytest
