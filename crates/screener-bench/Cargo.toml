@@ -1,0 +1,29 @@
+[package]
+name = "screener-bench"
+description = "Criterion benchmarks for the Wickra screener core: scan_batch scaling by universe size and indicator count, parallel vs sequential."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[features]
+# Toggle the core's parallel scan so `cargo bench` (default) measures the rayon
+# path and `cargo bench --no-default-features` measures the sequential one.
+default = ["parallel"]
+parallel = ["screener-core/parallel"]
+
+[dependencies]
+screener-core = { path = "../screener-core", default-features = false }
+
+[dev-dependencies]
+criterion.workspace = true
+
+[[bench]]
+name = "screener"
+harness = false
