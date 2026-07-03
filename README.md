@@ -45,8 +45,8 @@ registry — track progress in [ROADMAP.md](ROADMAP.md).
 ## Documentation
 
 - [Architecture](ARCHITECTURE.md) — the core, the data-driven boundary, the binding surface.
+- Guides under [`docs/`](docs): [Conditions & ScanSpec](docs/CONDITIONS.md) · [Indicators](docs/INDICATORS.md) · [Cross-section & breadth](docs/CROSS_SECTION.md) · [Streaming vs batch](docs/STREAMING.md) · [Cookbook](docs/Cookbook.md) · [Internals](docs/ARCHITECTURE.md).
 - [ROADMAP.md](ROADMAP.md) · [BENCHMARKS.md](BENCHMARKS.md) · [THREAT_MODEL.md](THREAT_MODEL.md) · [SECURITY.md](SECURITY.md).
-- The `ScanSpec` / condition reference and per-binding quickstarts are below and under `docs/`.
 
 ## Quickstart
 
