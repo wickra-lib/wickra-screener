@@ -1,6 +1,6 @@
-# Wickra Screener — .NET
+# Wickra Screener — C&#35;
 
-.NET bindings for the `wickra-screener` data-driven core over its C ABI hub
+C# bindings for the `wickra-screener` data-driven core over its C ABI hub
 (source-generated P/Invoke). Build a `Screener` from a spec JSON, drive it with
 command JSON, read back scan reports — the same protocol as every other binding.
 

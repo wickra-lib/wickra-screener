@@ -1,6 +1,7 @@
 # Wickra Screener — WASM
 
-WebAssembly bindings for the `wickra-screener` data-driven core (wasm-bindgen).
+WASM bindings for the `wickra-screener` data-driven core, compiled to WebAssembly
+with wasm-bindgen.
 Build a `Screener` from a spec JSON, drive it with command JSON, read back scan
 reports — the same protocol as every other binding, running in the browser.
 
