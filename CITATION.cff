@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "wickra-screener"
+abstract: >-
+  A parallel multi-symbol screener built on the Wickra core: a data-driven
+  condition tree (ScanSpec) is folded over each symbol's history with 514 O(1)
+  streaming indicators and scanned across the whole universe, exposed as a
+  JSON-over-C-ABI data API in ten languages.
+type: software
+authors:
+  - alias: kingchenc
+    website: "https://wickra.org"
+repository-code: "https://github.com/wickra-lib/wickra-screener"
+url: "https://wickra.org"
+license:
+  - MIT
+  - Apache-2.0
+keywords:
+  - trading
+  - screener
+  - indicators
+  - streaming
+  - finance
