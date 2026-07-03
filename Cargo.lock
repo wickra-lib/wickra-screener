@@ -2313,6 +2313,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "wickra-screener-c"
+version = "0.1.0"
+dependencies = [
+ "screener-core",
+]
+
+[[package]]
 name = "windows-link"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
