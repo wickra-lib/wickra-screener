@@ -1,0 +1,13 @@
+{
+  "universe": ["sym-01", "sym-02", "sym-03", "sym-04", "sym-05", "sym-06"],
+  "timeframe": "1h",
+  "condition": {
+    "type": "all",
+    "conditions": [
+      { "type": "cmp", "left": { "kind": "indicator", "name": "Rsi", "params": [14] }, "op": "gt", "right": { "kind": "const", "value": 50 } },
+      { "type": "cross_section", "expr": { "kind": "indicator", "name": "Roc", "params": [10] }, "metric": "rank", "op": "le", "value": 3 }
+    ]
+  },
+  "rank": { "by": { "kind": "indicator", "name": "Roc", "params": [10] }, "desc": true },
+  "limit": 3
+}

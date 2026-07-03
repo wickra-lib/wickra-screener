@@ -1,0 +1,4 @@
+{
+  "universe": ["sym-01", "sym-02", "sym-03", "sym-04", "sym-05", "sym-06"],
+  "condition": { "type": "cmp", "left": { "kind": "indicator", "name": "Ema", "params": [7] }, "op": "crosses_above", "right": { "kind": "indicator", "name": "Ema", "params": [19] } }
+}

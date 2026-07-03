@@ -1,0 +1,11 @@
+{
+  "universe": ["sym-01", "sym-02", "sym-03", "sym-04", "sym-05", "sym-06"],
+  "condition": {
+    "type": "all",
+    "conditions": [
+      { "type": "breadth", "inner": { "type": "cmp", "left": { "kind": "indicator", "name": "Rsi", "params": [14] }, "op": "gt", "right": { "kind": "const", "value": 50 } }, "op": "ge", "ratio": 0.4 },
+      { "type": "cmp", "left": { "kind": "price", "field": "close" }, "op": "gt", "right": { "kind": "const", "value": 100 } }
+    ]
+  },
+  "rank": { "by": { "kind": "price", "field": "close" }, "desc": true }
+}
