@@ -197,4 +197,40 @@ mod tests {
         let r = s.command_json("not json").unwrap();
         assert!(r.contains(r#""ok":false"#));
     }
+
+    #[test]
+    fn set_spec_command_swaps_the_spec() {
+        let mut s = Screener::new(SPEC).unwrap();
+        let cmd = r#"{"cmd":"set_spec","spec":{"universe":["X"],"condition":{"type":"cmp","left":{"kind":"price","field":"close"},"op":"lt","right":{"kind":"const","value":100}}}}"#;
+        assert_eq!(s.command_json(cmd).unwrap(), r#"{"ok":true}"#);
+        let scan = s
+            .command_json(&format!(
+                r#"{{"cmd":"scan","data":{{"X":[{}]}}}}"#,
+                candle_json(50.0)
+            ))
+            .unwrap();
+        assert!(scan.contains(r#""symbol":"X""#));
+    }
+
+    #[test]
+    fn feed_batch_command() {
+        let mut s = Screener::new(SPEC).unwrap();
+        let cmd = format!(
+            r#"{{"cmd":"feed_batch","symbol":"B","candles":[{},{}]}}"#,
+            candle_json(10.0),
+            candle_json(20.0)
+        );
+        assert_eq!(s.command_json(&cmd).unwrap(), r#"{"ok":true}"#);
+        let eval = s.command_json(r#"{"cmd":"evaluate"}"#).unwrap();
+        assert!(eval.contains(r#""symbol":"B""#)); // last candle 20 > 15
+    }
+
+    #[test]
+    fn bad_spec_returns_error_json() {
+        let mut s = Screener::new(SPEC).unwrap();
+        // An empty universe is structurally invalid.
+        let cmd = r#"{"cmd":"set_spec","spec":{"universe":[],"condition":{"type":"cmp","left":{"kind":"const","value":1},"op":"gt","right":{"kind":"const","value":0}}}}"#;
+        let r = s.command_json(cmd).unwrap();
+        assert!(r.contains(r#""ok":false"#));
+    }
 }

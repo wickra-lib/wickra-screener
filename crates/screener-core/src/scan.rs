@@ -330,4 +330,45 @@ mod tests {
         let json = serde_json::to_string(&report).unwrap();
         assert_eq!(serde_json::from_str::<ScanReport>(&json).unwrap(), report);
     }
+
+    #[test]
+    fn score_ties_break_by_symbol() {
+        let data = BTreeMap::from([
+            ("A".to_string(), vec![candle(20.0)]),
+            ("B".to_string(), vec![candle(20.0)]),
+            ("C".to_string(), vec![candle(30.0)]),
+        ]);
+        let spec = ScanSpec {
+            universe: vec!["A".into(), "B".into(), "C".into()],
+            timeframe: None,
+            condition: gt15(),
+            rank: Some(RankSpec {
+                by: close(),
+                desc: true,
+            }),
+            limit: None,
+        };
+        let report = scan_batch(&data, &spec).unwrap();
+        assert_eq!(report.matches.len(), 3);
+        assert_eq!(report.matches[0].symbol, "C"); // 30
+        assert_eq!(report.matches[1].symbol, "A"); // 20, tie -> A before B
+        assert_eq!(report.matches[2].symbol, "B");
+    }
+
+    #[test]
+    fn scan_is_deterministic() {
+        let spec = ScanSpec {
+            universe: vec!["A".into(), "B".into(), "C".into()],
+            timeframe: None,
+            condition: gt15(),
+            rank: None,
+            limit: None,
+        };
+        let first = scan_batch(&data(), &spec).unwrap();
+        let second = scan_batch(&data(), &spec).unwrap();
+        assert_eq!(
+            serde_json::to_string(&first).unwrap(),
+            serde_json::to_string(&second).unwrap()
+        );
+    }
 }
