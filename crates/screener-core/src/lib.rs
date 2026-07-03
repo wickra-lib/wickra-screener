@@ -12,10 +12,12 @@ mod error;
 mod eval;
 mod expr;
 mod indicator_set;
+mod scan;
 mod spec;
 mod symbol_state;
 mod universe;
 
 pub use error::{Error, Result};
 pub use expr::{Expr, PriceField};
+pub use scan::{scan_batch, ScanReport, ScanResult};
 pub use spec::{Comparator, Condition, CsMetric, RankSpec, ScanSpec};
