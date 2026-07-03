@@ -2,10 +2,6 @@
 //!
 //! (The handoff sketched a `CsCtx<'a>` wrapper around `&Universe`; passing the
 //! `&Universe` directly is equivalent and avoids a redundant wrapper.)
-//!
-//! Consumed by `scan` (P-SCR-1.9); the module-level `dead_code` allow is removed
-//! once that module wires it in.
-#![allow(dead_code)]
 
 use crate::expr::Expr;
 use crate::spec::{Comparator, Condition};
