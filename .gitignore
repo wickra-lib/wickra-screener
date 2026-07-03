@@ -3,6 +3,8 @@
 # resolved lockfile are local artifacts, never committed.
 /fuzz/target
 /fuzz/Cargo.lock
+/fuzz/corpus
+/fuzz/artifacts
 **/*.rs.bk
 Cargo.lock.bak
 .DS_Store
