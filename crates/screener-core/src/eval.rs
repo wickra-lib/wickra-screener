@@ -229,4 +229,20 @@ mod tests {
         u.fold("A", &candle(20.0)); // above 15
         assert!(eval_condition(&cond, "A", &u)); // prev 10<=15, cur 20>15
     }
+
+    #[test]
+    fn crosses_below_needs_two_bars() {
+        let cond = Condition::Cmp {
+            left: close(),
+            op: Comparator::CrossesBelow,
+            right: Expr::Const { value: 15.0 },
+        };
+        let s = spec(cond.clone());
+        let mut u = Universe::new();
+        u.ensure("A", &s).unwrap();
+        u.fold("A", &candle(20.0)); // above 15
+        assert!(!eval_condition(&cond, "A", &u));
+        u.fold("A", &candle(10.0)); // below -> crosses below
+        assert!(eval_condition(&cond, "A", &u));
+    }
 }

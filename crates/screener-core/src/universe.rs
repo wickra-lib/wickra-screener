@@ -206,4 +206,27 @@ mod tests {
         assert!(z["A"] < 0.0);
         assert!(z["C"] > 0.0);
     }
+
+    #[test]
+    fn rank_and_percentile_break_ties_by_key() {
+        let spec = price_spec();
+        let mut u = Universe::new();
+        for (sym, close) in [("A", 30.0), ("B", 30.0), ("C", 10.0)] {
+            u.ensure(sym, &spec).unwrap();
+            u.fold(sym, &candle(close));
+        }
+        let close = Expr::Price {
+            field: PriceField::Close,
+        };
+        // A and B tie at the top value; the rank breaks the tie by ascending key.
+        let rank = u.cross_section(&close, CsMetric::Rank);
+        assert!(approx(rank["A"], 1.0));
+        assert!(approx(rank["B"], 2.0));
+        assert!(approx(rank["C"], 3.0));
+        // Percentile counts strictly-smaller values, so the tied pair share 0.5.
+        let pct = u.cross_section(&close, CsMetric::PercentileRank);
+        assert!(approx(pct["A"], 0.5));
+        assert!(approx(pct["B"], 0.5));
+        assert!(approx(pct["C"], 0.0));
+    }
 }
