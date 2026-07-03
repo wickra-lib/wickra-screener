@@ -26,9 +26,25 @@ cargo bench -p screener-bench
 
 ## Results
 
-_To be filled in from the criterion run in P-SCR-5.6._ Figures will be the median
-estimate on a single machine; treat them as orders of magnitude, not guarantees —
-they vary with CPU core count and toolchain.
+Measured with `cargo bench -p screener-bench` (criterion) on a Windows x86-64
+laptop, default `parallel` (rayon) path. Figures are the median estimate; treat
+them as orders of magnitude, not guarantees — they vary with CPU core count and
+toolchain.
+
+| Benchmark | Universe × indicators | Median | Throughput |
+|-----------|-----------------------|--------|------------|
+| `scan_batch/100sym_5ind`     | 100 × ~5    | 1.34 ms | ~75 K sym/s |
+| `scan_batch/100sym_20ind`    | 100 × ~20   | 5.32 ms | ~19 K sym/s |
+| `scan_batch/1000sym_5ind`    | 1 000 × ~5  | 12.7 ms | ~79 K sym/s |
+| `scan_batch/1000sym_20ind`   | 1 000 × ~20 | 51.3 ms | ~20 K sym/s |
+| `scan_batch/10000sym_5ind`   | 10 000 × ~5 | 126 ms  | ~80 K sym/s |
+| `scan_batch/10000sym_20ind`  | 10 000 × ~20 | 513 ms | ~19 K sym/s |
+
+The takeaway: per-symbol throughput stays roughly constant as the universe grows
+(~80 K symbols/s at 5 indicators, ~19 K at 20), so scan cost scales linearly with
+universe size and with the number of distinct indicators a spec references — a
+1 000-symbol, 5-indicator screen finishes in ~13 ms. The nightly `bench.yml`
+workflow reruns this on a clean Linux runner for tracking over time.
 
 ## Caveats
 
