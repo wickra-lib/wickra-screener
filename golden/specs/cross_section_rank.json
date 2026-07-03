@@ -1,0 +1,5 @@
+{
+  "universe": ["sym-01", "sym-02", "sym-03", "sym-04", "sym-05", "sym-06"],
+  "condition": { "type": "cross_section", "expr": { "kind": "indicator", "name": "Roc", "params": [10] }, "metric": "rank", "op": "le", "value": 3 },
+  "rank": { "by": { "kind": "indicator", "name": "Roc", "params": [10] }, "desc": true }
+}

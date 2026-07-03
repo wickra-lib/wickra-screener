@@ -1,0 +1,11 @@
+{
+  "universe": ["sym-01", "sym-02", "sym-03", "sym-04", "sym-05", "sym-06"],
+  "condition": {
+    "type": "any",
+    "conditions": [
+      { "type": "cmp", "left": { "kind": "indicator", "name": "Rsi", "params": [14] }, "op": "lt", "right": { "kind": "const", "value": 30 } },
+      { "type": "cmp", "left": { "kind": "price", "field": "close" }, "op": "lt", "right": { "kind": "indicator", "name": "BollingerBands", "params": [20, 2], "field": "lower" } }
+    ]
+  },
+  "rank": { "by": { "kind": "indicator", "name": "Rsi", "params": [14] }, "desc": false }
+}
