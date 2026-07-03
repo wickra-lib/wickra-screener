@@ -5,8 +5,14 @@
 //! indicators and evaluated across the whole universe, in parallel (rayon) or
 //! sequentially (the WASM fallback), producing a byte-identical `ScanReport`.
 //!
-//! The public surface is assembled module by module through P-SCR-1; the final
-//! re-export block lands in `lib.rs` (P-SCR-1.12).
+//! Two modes share one core and one result type: [`scan_batch`] folds a whole
+//! universe and evaluates at the last bar, while [`Screener`] streams candles in
+//! (`feed`) and evaluates on demand — both return the same [`ScanReport`]. Every
+//! language binding drives the core through [`Screener::command_json`], a single
+//! JSON-in / JSON-out boundary.
+//!
+//! Indicators are resolved by name from the `wickra-core` registry (via the
+//! backtester's factory), and candles use [`Candle`] re-exported below.
 
 mod config;
 mod error;
@@ -25,3 +31,13 @@ pub use expr::{Expr, PriceField};
 pub use scan::{scan_batch, ScanReport, ScanResult};
 pub use screener::Screener;
 pub use spec::{Comparator, Condition, CsMetric, RankSpec, ScanSpec};
+
+// The candle type consumers feed and scan with (the backtester's OHLCV bar,
+// which the registry indicators are driven by).
+pub use wickra_backtest_core::Candle;
+
+/// The screener-core version string.
+#[must_use]
+pub fn version() -> &'static str {
+    env!("CARGO_PKG_VERSION")
+}
