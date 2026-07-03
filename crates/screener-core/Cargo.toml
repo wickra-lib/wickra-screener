@@ -1,0 +1,43 @@
+[package]
+name = "screener-core"
+description = "Data-driven core of the Wickra screener: a serde ScanSpec condition tree folded over a symbol universe with 514 O(1) streaming indicators."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[lints]
+workspace = true
+
+[features]
+# `parallel` scans symbols concurrently with rayon; it is on by default. The
+# wasm binding builds with --no-default-features for a sequential scan that is
+# byte-identical to the parallel one. `live` pulls the exchange facade to source
+# a live symbol universe (native-only).
+default = ["parallel"]
+parallel = ["dep:rayon"]
+live = ["dep:wickra-exchange"]
+
+[dependencies]
+# Streaming indicators (514 O(1) indicators) resolved by name + params.
+wickra-core.workspace = true
+# Candle + CSV loading for the universe data.
+wickra-data.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+toml.workspace = true
+rust_decimal.workspace = true
+thiserror.workspace = true
+# Data-parallel scan across symbols; optional (the `parallel` feature).
+rayon = { workspace = true, optional = true }
+# The native exchange facade for a live symbol universe; optional (`live`).
+wickra-exchange = { workspace = true, optional = true }
+
+[dev-dependencies]
+proptest.workspace = true
