@@ -13,7 +13,7 @@
 
 [workspace]
 resolver = "2"
-members = []
+members = ["crates/screener-core"]
 # The fuzz crate is its own (detached) workspace — cargo-fuzz builds it on a
 # nightly toolchain with sanitizer flags.
 exclude = ["fuzz"]
@@ -39,6 +39,8 @@ categories = ["finance", "command-line-utilities"]
 wickra-core = "0.9"
 wickra-data = "0.9"
 wickra-exchange = { git = "https://github.com/wickra-lib/wickra-exchange", version = "0.1" }
+# Workspace-internal crate, referenced by the CLI, bench and bindings.
+screener-core = { version = "0.1.0", path = "crates/screener-core" }
 # Serialization — the data-driven boundary (spec/command/report as JSON).
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
