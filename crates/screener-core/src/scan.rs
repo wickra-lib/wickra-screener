@@ -53,17 +53,26 @@ fn round_to(x: f64) -> f64 {
 /// ranking score, then sorts and limits the matches.
 pub fn scan_batch(data: &BTreeMap<String, Vec<Candle>>, spec: &ScanSpec) -> Result<ScanReport> {
     spec.validate()?;
-
     let mut universe = Universe::new();
     universe.symbols = folded_states(data, spec)?;
+    Ok(evaluate_universe(&universe, spec, data.len()))
+}
 
+/// Evaluate an already-folded universe against the spec: filter matches, collect
+/// their values and rank score, then sort and limit. Shared by `scan_batch` and
+/// the streaming `Screener::evaluate`; the spec is assumed already validated.
+pub(crate) fn evaluate_universe(
+    universe: &Universe,
+    spec: &ScanSpec,
+    scanned: usize,
+) -> ScanReport {
     let mut matches: Vec<ScanResult> = Vec::new();
     for (symbol, state) in &universe.symbols {
-        if !eval_condition(&spec.condition, symbol, &universe) {
+        if !eval_condition(&spec.condition, symbol, universe) {
             continue;
         }
         let mut values = BTreeMap::new();
-        collect_values(&spec.condition, symbol, state, &universe, &mut values);
+        collect_values(&spec.condition, symbol, state, universe, &mut values);
         if let Some(rank) = &spec.rank {
             add_expr_value(&rank.by, state, &mut values);
         }
@@ -80,16 +89,11 @@ pub fn scan_batch(data: &BTreeMap<String, Vec<Candle>>, spec: &ScanSpec) -> Resu
             score,
         });
     }
-
     sort_matches(&mut matches, spec);
     if let Some(limit) = spec.limit {
         matches.truncate(limit);
     }
-
-    Ok(ScanReport {
-        matches,
-        scanned: data.len(),
-    })
+    ScanReport { matches, scanned }
 }
 
 /// Build a fully-folded state per symbol, in parallel with rayon.
