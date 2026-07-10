@@ -76,7 +76,7 @@ jobs:
 
       # CycloneDX SBOM per published crate.
       - name: Install cargo-cyclonedx
-        uses: taiki-e/install-action@bffeee26d4db9be238a4ea78d8826604ebcb594d # v2.82.5
+        uses: taiki-e/install-action@c93ccc03e00cd0e08e494f5fd058a6c55a6a1907 # v2.82.8
         with:
           tool: cargo-cyclonedx
 
@@ -357,7 +357,7 @@ jobs:
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
       - name: Install wasm-pack (latest, via prebuilt binary)
-        uses: taiki-e/install-action@bffeee26d4db9be238a4ea78d8826604ebcb594d # v2.82.5
+        uses: taiki-e/install-action@c93ccc03e00cd0e08e494f5fd058a6c55a6a1907 # v2.82.8
         with:
           tool: wasm-pack
       - name: Build WASM package (bundler target)
