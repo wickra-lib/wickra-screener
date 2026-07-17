@@ -93,7 +93,7 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
-      - uses: taiki-e/install-action@bffeee26d4db9be238a4ea78d8826604ebcb594d # v2.82.5
+      - uses: taiki-e/install-action@2ca9b94c269419b7b0c711c09d0b21c4e1d51145 # v2.83.1
         with:
           tool: cargo-deny
       - run: cargo deny check
@@ -110,7 +110,7 @@ jobs:
           components: llvm-tools-preview
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
       - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@bffeee26d4db9be238a4ea78d8826604ebcb594d # v2.82.5
+        uses: taiki-e/install-action@2ca9b94c269419b7b0c711c09d0b21c4e1d51145 # v2.83.1
         with:
           tool: cargo-llvm-cov
       # Measure the core in its sequential (no rayon) configuration — the scan is
@@ -142,7 +142,7 @@ jobs:
         with:
           workspaces: fuzz
       - name: Install cargo-fuzz
-        uses: taiki-e/install-action@bffeee26d4db9be238a4ea78d8826604ebcb594d # v2.82.5
+        uses: taiki-e/install-action@2ca9b94c269419b7b0c711c09d0b21c4e1d51145 # v2.83.1
         with:
           tool: cargo-fuzz
       - name: Fuzz spec_parse (30 s)
@@ -226,7 +226,7 @@ jobs:
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
       - name: Install wasm-pack
-        uses: taiki-e/install-action@bffeee26d4db9be238a4ea78d8826604ebcb594d # v2.82.5
+        uses: taiki-e/install-action@2ca9b94c269419b7b0c711c09d0b21c4e1d51145 # v2.83.1
         with:
           tool: wasm-pack
       - name: Build the wasm binding
@@ -247,7 +247,7 @@ jobs:
       - uses: ./.github/actions/setup-rust
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
       - name: Install cbindgen
-        uses: taiki-e/install-action@bffeee26d4db9be238a4ea78d8826604ebcb594d # v2.82.5
+        uses: taiki-e/install-action@2ca9b94c269419b7b0c711c09d0b21c4e1d51145 # v2.83.1
         with:
           tool: cbindgen
       - name: Build the C ABI library (cdylib + staticlib)
@@ -367,7 +367,7 @@ jobs:
       # The pom points native.lib.dir at target/debug, so build the debug profile.
       - name: Build the C ABI library
         run: cargo build -p wickra-screener-c
-      - uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5.4.0
+      - uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
         with:
           distribution: temurin
           java-version: "25"
