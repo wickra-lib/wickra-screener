@@ -22,4 +22,6 @@ exclude = [
     "^https?://pypi\\.org/project/wickra-screener",
     "^https?://www\\.npmjs\\.com/package/wickra-screener",
     "^https?://pkg\\.go\\.dev/github\\.com/wickra-lib/wickra-screener-go",
+    "^https?://www\\.nuget\\.org/packages/Wickra\\.Screener",
+    "^https?://central\\.sonatype\\.com/artifact/org\\.wickra/wickra-screener",
 ]
