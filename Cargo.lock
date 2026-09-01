@@ -118,6 +118,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
+name = "base64"
+version = "0.23.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ac07cdecf99051d9a5238b80f35af32cdeba5b336e55d957b318b50137e18da5"
+
+[[package]]
 name = "base64ct"
 version = "1.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -291,9 +297,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.6.4"
+version = "4.6.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d91e0c145792ef73a6ad36d27c75ac09f1832222a3c209689d90f534685ee5b7"
+checksum = "473c7e07f409a8d772161724aa8db6a765a2532a70f9667eeb7b49d3d02fbdca"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -301,9 +307,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.6.2"
+version = "4.6.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f09628afdcc538b57f3c6341e9c8e9970f18e4a481690a64974d7023bd33548b"
+checksum = "7b48fea5a88e9ae728a2dcbedbfc0e730f7d60da42e1cb049a83c9fb8b789889"
 dependencies = [
  "anstream",
  "anstyle",
@@ -925,7 +931,7 @@ version = "0.1.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "96547c2556ec9d12fb1578c4eaf448b04993e7fb79cbaad930a656880a6bdfa0"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "bytes",
  "futures-channel",
  "futures-util",
@@ -1432,9 +1438,9 @@ dependencies = [
 
 [[package]]
 name = "pyo3"
-version = "0.29.0"
+version = "0.29.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd274650b21d4bfc26a0a47587962c1edb425f69287324355cd040c3ea66071c"
+checksum = "4688ddedf473e32662b9b067670129a8afb8c18e351482c70d62ba4a88171e8b"
 dependencies = [
  "libc",
  "once_cell",
@@ -1446,18 +1452,18 @@ dependencies = [
 
 [[package]]
 name = "pyo3-build-config"
-version = "0.29.0"
+version = "0.29.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c5e2a7d2f0d013342f295c048ad19237add5154a55b1c5a254c0ec93d4109078"
+checksum = "f41027e41b4bd03f6e60f9f417fe24a6341a6bb744edd62b6f709f2a52ea30e9"
 dependencies = [
  "target-lexicon",
 ]
 
 [[package]]
 name = "pyo3-ffi"
-version = "0.29.0"
+version = "0.29.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ca85c467da1bbc8d866eea5deff9cf29ea5f7785054a17da36e65bda9c05845b"
+checksum = "e591a95526fead067432c3b3a33fc74770b87b1e04e73671090d9c2055a2b327"
 dependencies = [
  "libc",
  "pyo3-build-config",
@@ -1465,9 +1471,9 @@ dependencies = [
 
 [[package]]
 name = "pyo3-macros"
-version = "0.29.0"
+version = "0.29.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ac53762fd065daa3194dd09337a38bd793a188100fd1a9304c4ab312d901771"
+checksum = "73225868fc1cd84eef2c3c230ddb91273bf1de46aeb8a4248da76d32a0924a1c"
 dependencies = [
  "proc-macro2",
  "pyo3-macros-backend",
@@ -1477,9 +1483,9 @@ dependencies = [
 
 [[package]]
 name = "pyo3-macros-backend"
-version = "0.29.0"
+version = "0.29.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ca3a1557399783172dc5bf39cfca835157732532cba56b71d2292161e53b362"
+checksum = "571575aa3749fa6216757dd47d2a3e7ef360f329a40f0666a9fbd14889024952"
 dependencies = [
  "heck",
  "proc-macro2",
@@ -1724,7 +1730,7 @@ version = "0.12.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eddd3ca559203180a307f12d114c268abf583f59b03cb906fd0b3ff8646c1147"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "bytes",
  "futures-channel",
  "futures-core",
@@ -1959,7 +1965,7 @@ dependencies = [
  "thiserror",
  "toml",
  "wickra-backtest-core",
- "wickra-core",
+ "wickra-core 0.9.9",
  "wickra-data",
  "wickra-exchange",
 ]
@@ -2249,18 +2255,18 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "2.0.19"
+version = "2.0.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "09a43598840e33d5b0331f38c5e30d13bb11c11210a4b58f0d9b18a5a5eefcd9"
+checksum = "ec86235f5fcc2a73650310756d2ac5b138a5780bbbdfae3eeccec992c435ba4f"
 dependencies = [
  "thiserror-impl",
 ]
 
 [[package]]
 name = "thiserror-impl"
-version = "2.0.19"
+version = "2.0.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "43cbfe0cf76104d42a574802844187e84a305e531ed54455f11fbde0f10541cd"
+checksum = "bc04cd3e1236dd4a98afca4569f2deb3f120e5422a4023be2cb683f8486292af"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2702,14 +2708,14 @@ dependencies = [
 
 [[package]]
 name = "wickra-backtest-core"
-version = "0.1.0"
-source = "git+https://github.com/wickra-lib/wickra-backtest#bd50f9733f875bf839ba5ac06b79ca7147d0f104"
+version = "0.1.2"
+source = "git+https://github.com/wickra-lib/wickra-backtest#29a5e6b61cdfa0e606dae44e25cde64e741c4c5f"
 dependencies = [
  "schemars",
  "serde",
  "serde_json",
  "thiserror",
- "wickra-core",
+ "wickra-core 1.0.4",
 ]
 
 [[package]]
@@ -2717,6 +2723,16 @@ name = "wickra-core"
 version = "0.9.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7cf4e7af4f00596d9bd33c66a9aaf935687959dd14d063b8b7d7d749e102680e"
+dependencies = [
+ "rayon",
+ "thiserror",
+]
+
+[[package]]
+name = "wickra-core"
+version = "1.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3801b8e584405b19c5db178a8aae4587250a27daf26397ce3bde9e4c0badb115"
 dependencies = [
  "rayon",
  "thiserror",
@@ -2732,13 +2748,13 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
- "wickra-core",
+ "wickra-core 0.9.9",
 ]
 
 [[package]]
 name = "wickra-exchange"
 version = "0.1.0"
-source = "git+https://github.com/wickra-lib/wickra-exchange#83e123e83a80f2f8a30cf7b1a51b6623025bda0a"
+source = "git+https://github.com/wickra-lib/wickra-exchange#20d1bf6a83e2766df33166716928a8f957509eee"
 dependencies = [
  "futures-util",
  "reqwest",
@@ -2750,9 +2766,9 @@ dependencies = [
 [[package]]
 name = "wickra-exchange-core"
 version = "0.1.0"
-source = "git+https://github.com/wickra-lib/wickra-exchange#83e123e83a80f2f8a30cf7b1a51b6623025bda0a"
+source = "git+https://github.com/wickra-lib/wickra-exchange#20d1bf6a83e2766df33166716928a8f957509eee"
 dependencies = [
- "base64",
+ "base64 0.23.1",
  "hex",
  "hmac",
  "p256",
@@ -2761,7 +2777,7 @@ dependencies = [
  "serde_json",
  "sha2",
  "thiserror",
- "wickra-core",
+ "wickra-core 0.9.9",
  "zeroize",
 ]
 
