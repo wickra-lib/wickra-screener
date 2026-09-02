@@ -404,11 +404,55 @@ mod tests {
 
         // The turn-on is on the way up past 120, not before.
         let first_on = signals.iter().position(|on| *on).unwrap();
-        assert!(
-            path[first_on] > 120.0,
-            "turned on at {} before clearing the previous column top",
-            path[first_on]
-        );
+        assert!(path[first_on] > 120.0, "turned on before the column top");
+    }
+
+    /// A bar the core rejects cannot move a point-and-figure column, so the
+    /// standing signal is what the symbol is still on. Nothing is invented from
+    /// a bar that could not be read.
+    #[test]
+    fn a_bar_the_core_rejects_leaves_the_signal_standing() {
+        let spec = BreadthSpec {
+            pnf_box: Some(0.01),
+            pnf_reversal: Some(3),
+            ..BreadthSpec::default()
+        };
+        let mut state = BreadthState::new(&spec).unwrap();
+
+        // Drive it up, down and out again so the signal is genuinely on.
+        let mut path: Vec<f64> = Vec::new();
+        for (from, to) in [(100, 120), (120, 104), (104, 126)] {
+            let step = if to >= from { 1 } else { -1 };
+            let mut price = from;
+            while price != to {
+                path.push(f64::from(price));
+                price += step;
+            }
+            path.push(f64::from(to));
+        }
+        let mut last = false;
+        for (i, close) in path.iter().enumerate() {
+            let time = i64::try_from(i).unwrap();
+            last = state
+                .update(&candle(time, close + 1.0, close - 1.0, *close))
+                .unwrap()
+                .on_buy_signal;
+        }
+        assert!(last, "the path has to leave the symbol on a signal");
+
+        // A bar the core will not accept: the member it produces is not finite,
+        // so the panel drops it, and the signal is unchanged either way.
+        let broken = Candle {
+            time: 9_999,
+            open: f64::NAN,
+            high: f64::NAN,
+            low: f64::NAN,
+            close: f64::NAN,
+            volume: 1.0,
+        };
+        let member = state.update(&broken).unwrap();
+        assert!(member.on_buy_signal, "the standing signal is kept");
+        assert!(assemble(vec![member], 9_999).is_none());
     }
 
     /// A price path that never reverses completes no column, so no double top
