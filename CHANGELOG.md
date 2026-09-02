@@ -365,6 +365,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   which is the intent: they are judged one at a time. The first, pytest
   GHSA-6w46-j5rx-g56g, proposed 9.0.3 for both files — a downgrade for
   `ci-dev-py3.txt`, already on 9.1.1, and an impossible install for the 3.9 row.
+- The pinned uv release in `scripts/update-lockfiles.sh` moves from 0.12.7 to
+  0.12.9, with all four checksums read from each archive's own `.sha256` on the
+  release rather than carried over.
 - `ci-dev-py39.in` caps `pytest<9`. The resolver already picks 8.x for that
   target, but a declared bound makes a hand-edit fail at compile time rather than
   at install time on the 3.9 runner. The lock is byte-identical.
