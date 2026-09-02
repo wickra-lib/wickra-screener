@@ -30,6 +30,6 @@ jobs:
       # actionlint shells out to shellcheck for `run:` blocks when it is
       # present; the ubuntu runner ships it, so this needs no install step.
       - name: Run actionlint
-        uses: docker://rhysd/actionlint@sha256:887a259a5a534f3c4f36cb02dca341673c6089431057ce13af8d287116c5b0bd # v1.7.7
+        uses: docker://rhysd/actionlint@sha256:887a259a5a534f3c4f36cb02dca341673c6089431057242cdc931e9f133147e9 # v1.7.7
         with:
           args: -color

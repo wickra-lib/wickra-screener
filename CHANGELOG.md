@@ -129,6 +129,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is refused against a live universe by the same feed check that refuses it
   against a file.
 
+### Security
+
+- `js-yaml` moves from 4.3.0 to 4.3.2 (GHSA-5p4m-2wfm-xmqj, CVSS 7.5), a
+  development dependency of `@napi-rs/cli` in the Node binding. Found by the new
+  `osv-scanner` CI job on its first run; nothing else in CI could see it, because
+  cargo-deny reads RustSec and does not look at npm manifests.
+
 ### Changed
 
 - `wickra-backtest-core` is consumed from crates.io (0.1.2) instead of git. It

@@ -1,6 +1,25 @@
 # OSV-Scanner suppressions (VEX record). Consumed by OSV-Scanner and the
-# OpenSSF Scorecard Vulnerabilities check. Each entry would be an advisory
-# assessed as not affecting wickra-screener; this mirrors the cargo-deny
-# `ignore` list in deny.toml at the OSV layer.
+# OpenSSF Scorecard Vulnerabilities check. Each entry is an advisory assessed as
+# not affecting wickra-screener; this mirrors the cargo-deny `ignore` list in
+# deny.toml at the OSV layer.
 #
-# Keep in lock-step with deny.toml's [advisories].ignore. No suppressions yet.
+# Keep in lock-step with deny.toml's [advisories].ignore.
+#
+# Note on the difference between the two scanners: cargo-deny resolves the
+# feature graph and reports what a build actually links, while OSV-Scanner reads
+# `Cargo.lock`, which records the union of every optional dependency. An advisory
+# that cargo-deny is silent about and OSV-Scanner reports is usually that
+# difference, and it belongs here with the reasoning rather than being silenced
+# by loosening the scan.
+
+[[IgnoredVulns]]
+id = "RUSTSEC-2026-0235"
+reason = """
+rkyv 0.7.46 is an optional dependency of rust_decimal, behind its `rkyv` feature.
+This workspace enables `serde` only, so no build links rkyv: `cargo tree -i rkyv
+--all-features --target all` reports nothing, and cargo-deny — which resolves
+features — does not flag it. It is present in Cargo.lock because a lockfile
+records the union of optional dependencies, which is what OSV-Scanner reads.
+
+Revisit when rust_decimal moves to rkyv 0.8, at which point the entry can go.
+"""
