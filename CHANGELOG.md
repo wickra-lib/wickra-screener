@@ -296,6 +296,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   a binding one. Checking the file in the tree proves nothing if the release
   replaces it moments before packing.
 
+### Fixed
+
+- The C ABI runs a command once per delivered response, not once per call.
+  `wickra_screener_command` executed `command_json` on every invocation,
+  including the documented `out = NULL, cap = 0` length query and the retry after
+  a too-small buffer. Every reach behind the hub asks for the length first and
+  reads second, so **each `feed` applied its candle twice** in Go, C, C++, C#,
+  Java and R — every indicator saw a doubled history. The native bindings
+  (Python, Node, WASM) call the core directly and were never affected. A
+  response that is produced but not written is now held until the call that
+  reads it, and that call returns it without re-running the command.
+
+  Nothing could have caught this before: the golden corpus only ever sends
+  `{"cmd":"scan"}`, which is a pure function of its payload and therefore reads
+  the same however many times it runs.
+
+### Added
+
+- Streaming-equals-batch tests in every binding: C, C++, C#, Go, Java, Node,
+  Python, R and WASM. Each feeds the committed universe candle by candle through
+  the JSON command boundary, evaluates, and asserts the result is byte-identical
+  to a single `scan` over the same data. `screener-core` proved this in Rust, but
+  that says nothing about the boundary each language actually crosses — and it
+  is what found the double-execution above. Each also checks that `reset` returns
+  a screener to its pre-feed state.
+- The WASM binding has tests. The `wasm` job built it on every push and executed
+  it on none of them, while the README advertises a live in-browser demo and the
+  core documents the sequential WASM path as byte-identical to the parallel one.
+  A `--target nodejs` build makes the module loadable without a browser; `pkg/`
+  stays what ships.
+- Golden parity from C, over the whole committed corpus. C has no portable
+  directory API, so the spec list is globbed by CMake and written into a
+  generated header — which keeps the property the other bindings get from a
+  runtime glob: a spec added to the corpus is covered without editing the test.
+- Three C ABI unit tests pinning the single-execution contract: the two-call
+  idiom, the truncation retry, and a different command abandoning a queued
+  response. Each was confirmed to fail with the fix removed.
 ### Changed
 
 - The CLI reads its `<SYMBOL>.csv` universe through `wickra-data`, the
