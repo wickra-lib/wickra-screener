@@ -3,7 +3,15 @@
 An `indicator` expression resolves to the output of a [Wickra](https://github.com/wickra-lib/wickra)
 streaming indicator, computed over each symbol's history and read at the
 evaluated bar. Screener does not reimplement any indicator — it drives the shared
-registry.
+registry, and what that registry resolves by name is what a scan can reference:
+**497** indicators today.
+
+The Wickra library ships more modules than that. The difference is the bar
+builders — Renko, Kagi, point-and-figure and the rest, which build bars rather
+than emit a value per bar, so they are not indicators — plus nine indicators the
+shared registry does not carry yet. Neither is something the screener can reach
+around; both are upstream. A name the registry does not know is a spec error,
+not a silent zero.
 
 Most indicators are driven by the candle alone. The rest read a **side feed**:
 a reference series, a derivatives tick, an order-book snapshot, the bar's trades,

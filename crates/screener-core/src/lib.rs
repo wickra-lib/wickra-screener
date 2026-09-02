@@ -1,8 +1,9 @@
 //! Data-driven core of the Wickra screener.
 //!
 //! A serde `ScanSpec` condition tree is folded over a symbol universe with the
-//! [Wickra](https://github.com/wickra-lib/wickra) library of 514 O(1) streaming
-//! indicators and evaluated across the whole universe, in parallel (rayon) or
+//! [Wickra](https://github.com/wickra-lib/wickra) indicator library — the 497
+//! the shared registry resolves by name — and evaluated across the whole
+//! universe, in parallel (rayon) or
 //! sequentially (the WASM fallback), producing a byte-identical `ScanReport`.
 //!
 //! Two modes share one core and one result type: [`scan_batch`] folds a whole

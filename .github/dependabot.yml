@@ -22,6 +22,23 @@ updates:
         patterns: ["*"]
         exclude-patterns: ["napi", "napi-derive", "napi-build"]
 
+  # The fuzz crate is a detached workspace (cargo-fuzz builds it on its own with
+  # sanitizer flags), so the root cargo entry above does not reach it.
+  - package-ecosystem: cargo
+    directory: "/fuzz"
+    schedule:
+      interval: monthly
+      time: "06:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 10
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "deps(fuzz)"
+    groups:
+      fuzz:
+        patterns: ["*"]
+
   # Node binding npm dependencies.
   - package-ecosystem: npm
     directory: "/bindings/node"
@@ -52,6 +69,38 @@ updates:
       prefix: "deps(pip)"
     groups:
       python-binding:
+        patterns: ["*"]
+
+  # The runnable examples are what a reader copies from, so their manifests are
+  # kept current too.
+  - package-ecosystem: npm
+    directory: "/examples/node"
+    schedule:
+      interval: monthly
+      time: "06:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 10
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "deps(npm)"
+    groups:
+      node-example:
+        patterns: ["*"]
+
+  - package-ecosystem: gomod
+    directory: "/examples/go"
+    schedule:
+      interval: monthly
+      time: "06:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 10
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "deps(gomod)"
+    groups:
+      go-example:
         patterns: ["*"]
 
   # GitHub Actions — keeps the SHA-pinned actions current (Dependabot reads
