@@ -21,6 +21,10 @@
 
 // An opaque handle to a screener instance. Created by [`wickra_screener_new`]
 // and destroyed by [`wickra_screener_free`]; never dereferenced by the caller.
+//
+// Besides the screener it carries a response that was produced but not yet
+// delivered, which is what lets the two-call idiom run a command once rather
+// than twice. See [`wickra_screener_command`].
 typedef struct WickraScreener WickraScreener;
 
 #ifdef __cplusplus
@@ -50,6 +54,14 @@ void wickra_screener_free(WickraScreener *handle);
 // response and a trailing NUL have been written to `out`; otherwise `out` is
 // left untouched and the caller should re-call with a `cap` of at least
 // `len + 1`. Pass `out = NULL`, `cap = 0` to query the length without writing.
+//
+// The command runs **once per delivered response**, not once per call. A
+// response that was produced but not written -- a length query, or a buffer too
+// small -- is held until the call that reads it, and that call returns it
+// without running the command again. This matters for every command that
+// mutates: before it, `feed` applied each candle twice in Go, C, C++, C#, Java
+// and R, all of which use the two-call idiom, while `scan` looked correct
+// because it is a pure function of its payload.
 //
 // # Safety
 // `handle` must be a valid handle; `cmd_json` a valid NUL-terminated C string;

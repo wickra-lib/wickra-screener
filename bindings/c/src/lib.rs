@@ -40,9 +40,9 @@ pub const WICKRA_SCREENER_ERR_PANIC: i32 = -3;
 /// An opaque handle to a screener instance. Created by [`wickra_screener_new`]
 /// and destroyed by [`wickra_screener_free`]; never dereferenced by the caller.
 ///
-/// `pending` holds a response that was produced but not delivered, so the
-/// two-call idiom runs a command once rather than twice. See
-/// [`wickra_screener_command`].
+/// Besides the screener it carries a response that was produced but not yet
+/// delivered, which is what lets the two-call idiom run a command once rather
+/// than twice. See [`wickra_screener_command`].
 pub struct WickraScreener {
     screener: Screener,
     pending: Option<(String, String)>,
