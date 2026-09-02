@@ -225,5 +225,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sits two lines before the dereference and CodeQL cannot follow that invariant
   across the FFI boundary. Kept in the source, so the reasoning outlives any one
   alert dismissal.
+- CI installs its Python tooling from hash-locked requirement files. A
+  hash-locked `ci-dev.txt` was committed and referenced by no workflow at all;
+  the jobs ran `pip install maturin pytest` and `pip install --upgrade pip
+  maturin`, unpinned, straight from PyPI. The pinning was there to be read, not
+  to be used.
+- The Python lock is split by interpreter version, because one resolution cannot
+  serve the matrix: `pytest` 9.x and `iniconfig` 2.3 both declare
+  `requires-python >= 3.10`, while the matrix still runs 3.9. The single
+  `ci-dev.txt` pinned `pytest==9.1.1` and could not have installed on the 3.9
+  row — invisible precisely because nothing installed it. `ci-dev-py39.txt` now
+  resolves to `pytest==8.4.2`, and `ci-dev-py3.txt` keeps 9.1.1.
+- `scripts/update-lockfiles.sh` regenerates every committed lockfile. The
+  requirement files named it before it existed. uv is required rather than
+  fetched: bootstrapping is opt-in behind `WICKRA_BOOTSTRAP_UV=1` and verifies a
+  pinned release archive against a recorded checksum, instead of piping an
+  installer URL into a shell.
+- The link check reads every markdown file in the tree. Its globs were `*.md`
+  and `bindings/*/README.md`, which reached 12 of 36 tracked markdown files —
+  `docs/` (7 guides), the issue templates, `examples/`, `golden/` and
+  `bindings/csharp/WickraScreener/README.md` were never checked.
+- `actionlint` moves from 1.7.7 to 1.7.12, checksum taken from the release's own
+  `checksums.txt`.
+
+### Added
+
+- A non-blocking `links` job in `ci.yml`. `links.yml` stays authoritative and
+  weekly, since external link rot is non-deterministic and must not be able to
+  fail a pull request; but a weekly run surfaces a link this PR breaks up to
+  seven days later, when it reads as unrelated. The advisory job shows it now and
+  cannot stop anything.
 
 [Unreleased]: https://github.com/wickra-lib/wickra-screener/commits/main
