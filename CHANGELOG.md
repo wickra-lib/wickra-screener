@@ -188,4 +188,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reproducible rather than resolving to whatever the default branch is at the
   time.
 
+### Fixed
+
+- The Node binding records why CodeQL raises `rust/access-invalid-pointer`
+  against its `Screener` struct. The file writes no unsafe and no raw pointer;
+  the anchor is the napi-derive expansion, where the run-time type-tag check
+  sits two lines before the dereference and CodeQL cannot follow that invariant
+  across the FFI boundary. Kept in the source, so the reasoning outlives any one
+  alert dismissal.
+
 [Unreleased]: https://github.com/wickra-lib/wickra-screener/commits/main
