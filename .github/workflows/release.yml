@@ -344,6 +344,10 @@ jobs:
         shell: bash
         run: |
           set -e
+          # The root package is published from bindings/node and declares the
+          # same dual licence, so it needs the texts as much as the six platform
+          # packages do.
+          cp LICENSE-MIT LICENSE-APACHE bindings/node/
           for dir in bindings/node/npm/*/; do
             cp LICENSE-MIT LICENSE-APACHE "$dir"
           done

@@ -92,6 +92,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A `feed_payload` fuzz target over the streaming command envelope, covering the
   feed conversions an attacker-controlled document reaches.
 
+### Added
+
+- A C++ wrapper, `bindings/c/include/wickra_screener.hpp`: header-only, C++17,
+  owning the handle, doing the two-call length protocol behind
+  `wickra_screener_command`, and turning a negative return into an exception. The
+  C++ example is written against it, so CMake and ctest build and run it.
+- `docs.rs` metadata on both published crates, and a copy of each licence text
+  inside them — a crates.io package carries only what is under its own
+  directory, so the root copies never travelled with it.
+
 ### Fixed
 
 - A scan that assembles the cross-section itself, or that names a benchmark

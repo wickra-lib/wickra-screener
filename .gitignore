@@ -61,5 +61,7 @@ examples/c/build/
 # Licence texts staged into the npm platform packages by release.yml so each
 # published package carries the texts its `license` field names. Copies, not
 # sources: LICENSE-MIT and LICENSE-APACHE at the root are the originals.
+bindings/node/LICENSE-MIT
+bindings/node/LICENSE-APACHE
 bindings/node/npm/*/LICENSE-MIT
 bindings/node/npm/*/LICENSE-APACHE
