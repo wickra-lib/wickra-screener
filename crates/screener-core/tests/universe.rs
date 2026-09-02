@@ -30,6 +30,8 @@ fn spec(universe: &[&str]) -> ScanSpec {
     ScanSpec {
         universe: universe.iter().map(|s| (*s).to_string()).collect(),
         timeframe: None,
+        reference: None,
+        breadth: None,
         condition: Condition::Cmp {
             left: Expr::Price {
                 field: PriceField::Close,

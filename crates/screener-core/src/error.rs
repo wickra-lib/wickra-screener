@@ -32,6 +32,20 @@ pub enum Error {
     /// put values into a scan that the screen never asked for.
     #[error("symbol {0} is not in the spec's universe")]
     NotInUniverse(String),
+    /// The spec names an indicator that reads a cross-section member signal the
+    /// screener cannot derive from candles. Answering with a panel where that
+    /// signal is false for every symbol would report a confident wrong number,
+    /// so the spec is refused and the caller can supply an explicit panel.
+    #[error(
+        "{indicator} reads the {signal} signal, which cannot be derived from candles; \
+         supply an explicit sections feed"
+    )]
+    UnderivableSignal {
+        /// The indicator the spec names.
+        indicator: String,
+        /// The member signal it reads.
+        signal: String,
+    },
     /// A side feed entry could not be converted to the type indicators consume.
     #[error("feed: {0}")]
     Feed(String),

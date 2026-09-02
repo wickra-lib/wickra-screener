@@ -58,6 +58,8 @@ fn spec(universe: &BTreeMap<String, SymbolInput>, count: usize) -> ScanSpec {
     ScanSpec {
         universe: universe.keys().cloned().collect(),
         timeframe: None,
+        reference: None,
+        breadth: None,
         condition: Condition::All { conditions },
         rank: None,
         limit: None,

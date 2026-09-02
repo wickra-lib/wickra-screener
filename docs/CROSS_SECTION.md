@@ -61,6 +61,49 @@ Breadth is a **gate**: it evaluates to the same truth value for every symbol of
 the bar, so it is normally combined (`all`) with a per-symbol condition to filter
 individual matches. A breadth condition may **not** nest another breadth.
 
+## The market panel the screener builds for itself
+
+The `breadth` **condition** above is the screener's own construction. Separately,
+`wickra-core` ships a family of breadth **indicators** — `AdvanceDecline`,
+`McClellanOscillator`, `Trin`, `NewHighsNewLows`, `PercentAboveMa` and the rest —
+which read a *cross-section*: a panel of the whole market at one bar.
+
+A backtester has to be handed that panel, because it sees one instrument. A
+screener already holds the universe it is scanning, so a batch scan assembles the
+panel itself and a breadth screen needs no second data source:
+
+```json
+{ "kind": "indicator", "name": "McClellanOscillator", "params": [19, 39] }
+```
+
+Each symbol contributes a member built from its own bar: the change against its
+previous close, the bar volume, whether the bar set a new high or low over
+`breadth.period`, and whether the close is above an `Sma(breadth.ma_period)`.
+Supplying an explicit `sections` feed overrides the derived panel — an explicit
+panel is a statement about the data, the derived one a convenience.
+
+Two limits, both refusals rather than quiet wrong answers:
+
+- `BullishPercentIndex` reads a point-and-figure buy signal, which cannot be read
+  off a candle. A derived panel would report it false for every symbol and answer
+  with a confident zero, so a spec naming it against a derived panel is **refused**.
+  Supply an explicit `sections` feed for it.
+- A **streaming** screener sees one symbol's bar at a time and cannot know which
+  other symbols will print at that timestamp, so it cannot derive the panel. A
+  breadth spec fed through `feed` needs an explicit `sections` feed per bar.
+
+## One bar means one bar
+
+A scan that assembles the panel itself, or that names a `reference` symbol, folds
+the universe **one timestamp at a time** rather than symbol by symbol. The
+timeline is the union of the universe's bar timestamps, not the intersection, so
+one halted symbol does not rewind the scan for everyone else: at each timestamp
+only the symbols that printed advance, and the rest hold their state.
+
+A symbol whose most recent bar is older than the last bar in the universe is
+named in the report's `stale` list. It is still screened — its state is its last
+bar — but a halted or delisted name no longer reads like a live one.
+
 ## See also
 
 - [CONDITIONS.md](CONDITIONS.md) · [INDICATORS.md](INDICATORS.md) · [STREAMING.md](STREAMING.md) · [Cookbook.md](Cookbook.md)

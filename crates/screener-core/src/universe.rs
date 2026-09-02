@@ -145,6 +145,8 @@ mod tests {
         ScanSpec {
             universe: vec!["A".into(), "B".into(), "C".into()],
             timeframe: None,
+            reference: None,
+            breadth: None,
             condition: Condition::Cmp {
                 left: Expr::Price {
                     field: PriceField::Close,

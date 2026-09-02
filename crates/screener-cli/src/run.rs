@@ -234,6 +234,7 @@ mod tests {
             matches: vec![],
             scanned: 5,
             missing: vec![],
+            stale: vec![],
             timeframe: None,
         };
         let text = render_text(&report);
@@ -247,6 +248,7 @@ mod tests {
             matches: vec![],
             scanned: 1,
             missing: vec!["BBB".to_string(), "CCC".to_string()],
+            stale: vec![],
             timeframe: None,
         };
         let text = render_text(&report);

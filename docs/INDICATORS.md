@@ -60,12 +60,12 @@ also consume one side feed:
 | Feed | Payload field | Families that need it |
 |------|---------------|-----------------------|
 | — | (none) | the bulk of the registry: `Rsi`, `Ema`, `Macd`, `BollingerBands`, … |
-| reference series | `reference` | pairwise: `Beta`, `Alpha`, `PearsonCorrelation`, `Cointegration`, … |
+| reference series | `reference` | pairwise: `Beta`, `Alpha`, `PearsonCorrelation`, `Cointegration`, … — or name a benchmark once with the spec's `reference` field |
 | derivatives tick | `derivs` | `FundingRate`, `OpenInterestDelta`, `TakerBuySellRatio`, … |
 | order book | `books` | `Microprice`, `DepthSlope`, `OrderFlowImbalance`, … |
 | trades | `trades` | `Vpin`, `CumulativeVolumeDelta`, `TradeImbalance`, … |
 | trades **and** order book | `trades` + `books` | `EffectiveSpread`, `KylesLambda`, `RealizedSpread` |
-| market cross-section | `sections` | breadth: `AdvanceDecline`, `McClellanOscillator`, `Trin`, … |
+| market cross-section | `sections` | breadth: `AdvanceDecline`, `McClellanOscillator`, `Trin`, … — a **batch** scan assembles this from its own universe, so the feed is optional there; see [CROSS_SECTION.md](CROSS_SECTION.md) |
 
 A batch scan supplies them as parallel arrays beside the candles, one entry per
 candle:

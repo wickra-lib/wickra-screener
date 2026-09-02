@@ -103,6 +103,8 @@ mod tests {
         ScanSpec {
             universe: vec!["A".into()],
             timeframe: None,
+            reference: None,
+            breadth: None,
             condition: cond,
             rank: None,
             limit: None,

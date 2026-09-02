@@ -1,6 +1,7 @@
 //! The batch scan: fold a universe, evaluate the condition per symbol, and rank
 //! the matches into a deterministic [`ScanReport`].
 
+use crate::breadth::{assemble, BreadthState};
 use crate::error::Result;
 use crate::eval::eval_condition;
 use crate::expr::Expr;
@@ -44,6 +45,13 @@ pub struct ScanReport {
     /// inferred from a count. Omitted when empty.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub missing: Vec<String>,
+    /// Symbols whose most recent bar is older than the last bar in the universe.
+    ///
+    /// A symbol that stopped printing still carries the state of its last bar and
+    /// is still screened, so without naming it a halted or delisted name reads
+    /// exactly like a live one. Omitted when empty.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub stale: Vec<String>,
     /// The spec's timeframe label, echoed so a report says which bars it
     /// describes. Omitted when the spec declares none.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -77,9 +85,59 @@ pub fn scan_batch(data: BTreeMap<String, SymbolInput>, spec: &ScanSpec) -> Resul
     let series = ingest(data, spec)?;
     let missing = spec.missing_from(series.keys().map(String::as_str));
     let scanned = series.len();
+
+    // A batch scan holds the whole universe, so it can assemble the market
+    // cross-section itself and read a benchmark close off the same bar. Neither
+    // is true of a single symbol's feeds, which is why the feed check is made
+    // against what this scan can supply rather than against the feeds alone.
+    let lockstep = needs_lockstep(&series, spec);
+    for symbol_series in series.values() {
+        let available = symbol_series
+            .available()
+            .with_derived_sections(lockstep)
+            .with_reference_symbol(spec.reference.is_some());
+        spec.check_feeds(available)?;
+    }
+
+    let stale = stale_symbols(&series);
     let mut universe = Universe::new();
-    universe.symbols = folded_states(&series, spec)?;
-    Ok(evaluate_universe(&universe, spec, scanned, missing))
+    universe.symbols = if lockstep {
+        lockstep_states(&series, spec)?
+    } else {
+        folded_states(&series, spec)?
+    };
+    Ok(evaluate_universe(&universe, spec, scanned, missing, stale))
+}
+
+/// Whether this scan has to fold the universe in lockstep rather than symbol by
+/// symbol.
+///
+/// Two things need it: a cross-section the screener assembles itself, which by
+/// definition wants every symbol at the same timestamp, and a benchmark
+/// reference symbol, whose close has to be read at that timestamp. A scan
+/// needing neither keeps the per-symbol fold, which parallelises with no
+/// cross-symbol ordering at all.
+fn needs_lockstep(data: &BTreeMap<String, CoreSeries>, spec: &ScanSpec) -> bool {
+    if spec.reference.is_some() {
+        return true;
+    }
+    spec.needs_cross_section() && data.values().any(|series| !series.available().sections)
+}
+
+/// The symbols whose last bar is older than the last bar anywhere in the
+/// universe.
+fn stale_symbols(data: &BTreeMap<String, CoreSeries>) -> Vec<String> {
+    let Some(last) = data
+        .values()
+        .filter_map(|series| series.candles.last().map(|candle| candle.time))
+        .max()
+    else {
+        return Vec::new();
+    };
+    data.iter()
+        .filter(|(_, series)| series.candles.last().is_some_and(|c| c.time < last))
+        .map(|(symbol, _)| symbol.clone())
+        .collect()
 }
 
 /// Validate and convert the input for every symbol the spec's universe names,
@@ -100,7 +158,6 @@ fn ingest(
             continue;
         }
         let series = CoreSeries::build(&symbol, input.into_series())?;
-        spec.check_feeds(series.available())?;
         out.insert(symbol, series);
     }
     Ok(out)
@@ -114,6 +171,7 @@ pub(crate) fn evaluate_universe(
     spec: &ScanSpec,
     scanned: usize,
     missing: Vec<String>,
+    stale: Vec<String>,
 ) -> ScanReport {
     let mut matches: Vec<ScanResult> = Vec::new();
     for (symbol, state) in &universe.symbols {
@@ -146,8 +204,91 @@ pub(crate) fn evaluate_universe(
         matches,
         scanned,
         missing,
+        stale,
         timeframe: spec.timeframe.clone(),
     }
+}
+
+/// Fold the whole universe one timestamp at a time.
+///
+/// The timeline is the sorted *union* of the bar timestamps, not the
+/// intersection: one delisted symbol must not rewind the scan for everyone else.
+/// At each timestamp only the symbols that printed a bar advance and the rest
+/// hold the state they had. Because a symbol's indicators only ever see that
+/// symbol's own bars, this yields exactly the states the per-symbol fold yields.
+/// What changes is that the cross-section each of them reads is assembled from
+/// the members of that same timestamp, which is what a rank or a breadth reading
+/// has to mean.
+fn lockstep_states(
+    data: &BTreeMap<String, CoreSeries>,
+    spec: &ScanSpec,
+) -> Result<BTreeMap<String, SymbolState>> {
+    let mut timeline: Vec<i64> = data
+        .values()
+        .flat_map(|series| series.candles.iter().map(|candle| candle.time))
+        .collect();
+    timeline.sort_unstable();
+    timeline.dedup();
+
+    let breadth_spec = spec.breadth.clone().unwrap_or_default();
+    let mut states = BTreeMap::new();
+    let mut breadth = BTreeMap::new();
+    let mut cursors: BTreeMap<&str, usize> = BTreeMap::new();
+    for symbol in data.keys() {
+        states.insert(symbol.clone(), SymbolState::new(spec)?);
+        breadth.insert(symbol.clone(), BreadthState::new(&breadth_spec)?);
+        cursors.insert(symbol.as_str(), 0);
+    }
+
+    let mut reference_close: Option<f64> = None;
+    for timestamp in timeline {
+        // First pass: which symbols printed at this timestamp, and the member
+        // each contributes. The panel has to exist before any indicator reads it.
+        let mut printing: Vec<&str> = Vec::new();
+        let mut members = Vec::new();
+        for (symbol, series) in data {
+            let index = cursors[symbol.as_str()];
+            let Some(candle) = series.candles.get(index) else {
+                continue;
+            };
+            if candle.time != timestamp {
+                continue;
+            }
+            printing.push(symbol.as_str());
+            members.push(
+                breadth
+                    .get_mut(symbol)
+                    .expect("a breadth state per symbol")
+                    .update(candle),
+            );
+            if spec.reference.as_deref() == Some(symbol.as_str()) {
+                reference_close = Some(candle.close);
+            }
+        }
+        let section = assemble(members, timestamp);
+
+        // Second pass: fold each printing symbol against the panel of this bar.
+        for symbol in printing {
+            let series = &data[symbol];
+            let index = cursors[symbol];
+            let candle = &series.candles[index];
+            let mut feeds = series.bar(index);
+            // A feed the caller supplied wins: an explicit panel or reference is
+            // a statement about the data, and the derived one is a convenience.
+            if feeds.cross_section.is_none() {
+                feeds.cross_section = section.as_ref();
+            }
+            if feeds.reference.is_none() {
+                feeds.reference = reference_close;
+            }
+            states
+                .get_mut(symbol)
+                .expect("a state per symbol")
+                .fold(candle, feeds);
+            *cursors.get_mut(symbol).expect("a cursor per symbol") += 1;
+        }
+    }
+    Ok(states)
 }
 
 /// Build a fully-folded state per symbol, in parallel with rayon.
@@ -320,6 +461,8 @@ mod tests {
         let spec = ScanSpec {
             universe: vec!["A".into(), "B".into(), "C".into()],
             timeframe: None,
+            reference: None,
+            breadth: None,
             condition: gt15(),
             rank: Some(RankSpec {
                 by: close(),
@@ -341,6 +484,8 @@ mod tests {
         let spec = ScanSpec {
             universe: vec!["A".into(), "B".into(), "C".into()],
             timeframe: None,
+            reference: None,
+            breadth: None,
             condition: gt15(),
             rank: None,
             limit: None,
@@ -357,6 +502,8 @@ mod tests {
         let spec = ScanSpec {
             universe: vec!["A".into(), "B".into(), "C".into()],
             timeframe: None,
+            reference: None,
+            breadth: None,
             condition: Condition::CrossSection {
                 expr: close(),
                 metric: CsMetric::Rank,
@@ -377,6 +524,8 @@ mod tests {
         let spec = ScanSpec {
             universe: vec!["A".into(), "B".into(), "C".into()],
             timeframe: None,
+            reference: None,
+            breadth: None,
             condition: gt15(),
             rank: None,
             limit: None,
@@ -396,6 +545,8 @@ mod tests {
         let spec = ScanSpec {
             universe: vec!["A".into(), "B".into(), "C".into()],
             timeframe: None,
+            reference: None,
+            breadth: None,
             condition: gt15(),
             rank: Some(RankSpec {
                 by: close(),
@@ -415,6 +566,8 @@ mod tests {
         let spec = ScanSpec {
             universe: vec!["A".into(), "B".into(), "C".into()],
             timeframe: None,
+            reference: None,
+            breadth: None,
             condition: gt15(),
             rank: None,
             limit: None,

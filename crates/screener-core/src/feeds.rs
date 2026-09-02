@@ -202,6 +202,7 @@ impl CoreSeries {
             books: self.books.is_some(),
             trades: self.trades.is_some(),
             sections: self.sections.is_some(),
+            sections_are_derived: false,
         }
     }
 
@@ -239,6 +240,7 @@ impl BarFeeds<'_> {
             books: self.orderbook.is_some(),
             trades: !self.trades.is_empty(),
             sections: self.cross_section.is_some(),
+            sections_are_derived: false,
         }
     }
 }
@@ -302,9 +304,36 @@ pub(crate) struct Available {
     pub(crate) books: bool,
     pub(crate) trades: bool,
     pub(crate) sections: bool,
+    /// Whether the cross-section is one the screener assembles from the universe
+    /// rather than one the caller supplied. The derived panel carries every
+    /// member signal readable off a candle, so the distinction only matters to
+    /// the one indicator that reads a signal which is not.
+    pub(crate) sections_are_derived: bool,
 }
 
 impl Available {
+    /// The same availability, with the cross-section the screener can assemble
+    /// for itself counted as present.
+    pub(crate) fn with_derived_sections(self, derived: bool) -> Self {
+        if !derived || self.sections {
+            return self;
+        }
+        Self {
+            sections: true,
+            sections_are_derived: true,
+            ..self
+        }
+    }
+
+    /// The same availability, with the benchmark symbol the scan reads a close
+    /// from counted as the reference feed.
+    pub(crate) fn with_reference_symbol(self, named: bool) -> Self {
+        Self {
+            reference: self.reference || named,
+            ..self
+        }
+    }
+
     /// Whether a feed family is present.
     pub(crate) fn has(self, kind: FeedKind) -> bool {
         match kind {
@@ -432,6 +461,7 @@ mod tests {
             books: true,
             trades: true,
             sections: true,
+            sections_are_derived: false,
         };
         assert!(all.has(FeedKind::Pair));
         assert!(all.has(FeedKind::Derivatives));

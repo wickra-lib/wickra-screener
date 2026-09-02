@@ -14,6 +14,7 @@
 //! Indicators are resolved by name from the `wickra-core` registry (via the
 //! backtester's factory), and candles use [`Candle`] re-exported below.
 
+mod breadth;
 mod config;
 mod error;
 mod eval;
@@ -26,6 +27,7 @@ mod spec;
 mod symbol_state;
 mod universe;
 
+pub use breadth::BreadthSpec;
 pub use config::Config;
 pub use error::{Error, Result};
 pub use expr::{Expr, PriceField};

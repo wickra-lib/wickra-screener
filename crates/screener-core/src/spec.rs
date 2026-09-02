@@ -1,6 +1,7 @@
 //! The scan specification: comparators, the condition tree, ranking and the
 //! top-level [`ScanSpec`].
 
+use crate::breadth::{BreadthSpec, NEEDS_BUY_SIGNAL};
 use crate::error::{Error, Result};
 use crate::expr::Expr;
 use crate::feeds::{Available, FeedKind};
@@ -106,9 +107,23 @@ pub struct RankSpec {
 pub struct ScanSpec {
     /// The symbols scanned.
     pub universe: Vec<String>,
-    /// Informational candle timeframe (e.g. `"1h"`).
+    /// Candle timeframe label (e.g. `"1h"`), echoed into the report.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub timeframe: Option<String>,
+    /// A benchmark symbol from the universe whose close feeds the pairwise
+    /// indicators of every other symbol, read at the same bar.
+    ///
+    /// This is the convenient form of the reference feed: a screen that ranks a
+    /// universe against one of its members ("beta to BTC") names it once instead
+    /// of repeating that member's whole series under every symbol. A per-symbol
+    /// `reference` series in the feeds still wins where both are given, which is
+    /// how a benchmark outside the universe is expressed.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reference: Option<String>,
+    /// How the cross-section the screener assembles for itself is parameterised.
+    /// Absent means the defaults.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub breadth: Option<BreadthSpec>,
     /// The condition tree evaluated at the latest bar.
     pub condition: Condition,
     /// Optional ranking of the matches.
@@ -135,16 +150,34 @@ impl ScanSpec {
     }
 
     /// Structural validation: the universe is non-empty, any `limit` is
-    /// positive, and no breadth condition is nested inside another breadth.
-    /// (Indicator existence is enforced when the indicator set is built.)
-    pub(crate) fn validate(&self) -> Result<()> {
+    /// positive, a named reference symbol is in the universe, the breadth
+    /// configuration is sane, and no breadth condition is nested inside another
+    /// breadth. (Indicator existence is enforced when the indicator set is
+    /// built, and feed availability when a scan knows what it can supply.)
+    pub fn validate(&self) -> Result<()> {
         if self.universe.is_empty() {
             return Err(Error::BadSpec("universe is empty".into()));
         }
         if self.limit == Some(0) {
             return Err(Error::BadSpec("limit must be greater than 0".into()));
         }
+        if let Some(reference) = &self.reference {
+            if !self.universe.contains(reference) {
+                return Err(Error::BadSpec(format!(
+                    "reference symbol {reference} is not in the universe"
+                )));
+            }
+        }
+        if let Some(breadth) = &self.breadth {
+            breadth.validate()?;
+        }
         check_breadth_nesting(&self.condition)
+    }
+
+    /// Whether the spec names an indicator that reads the market cross-section.
+    #[must_use]
+    pub fn needs_cross_section(&self) -> bool {
+        self.required_feeds().contains(&FeedKind::CrossSection)
     }
 
     /// The universe as a set, for membership tests during a scan.
@@ -197,6 +230,18 @@ impl ScanSpec {
                 return Ok(());
             };
             let kind = feed_kind(name).ok_or_else(|| Error::UnknownIndicator(name.clone()))?;
+            if kind == FeedKind::CrossSection
+                && available.sections_are_derived
+                && name == NEEDS_BUY_SIGNAL
+            {
+                // The derived panel carries every member signal that can be read
+                // off a candle. This one cannot, so answering with a panel where
+                // it is false for every symbol would report a confident zero.
+                return Err(Error::UnderivableSignal {
+                    indicator: name.clone(),
+                    signal: "point-and-figure buy".to_string(),
+                });
+            }
             if available.has(kind) {
                 return Ok(());
             }
@@ -301,6 +346,8 @@ mod tests {
         let spec = ScanSpec {
             universe: vec!["AAA".into()],
             timeframe: Some("1h".into()),
+            reference: None,
+            breadth: None,
             condition: cmp(),
             rank: None,
             limit: Some(5),
@@ -314,6 +361,8 @@ mod tests {
         let spec = ScanSpec {
             universe: vec![],
             timeframe: None,
+            reference: None,
+            breadth: None,
             condition: cmp(),
             rank: None,
             limit: None,
@@ -326,6 +375,8 @@ mod tests {
         let spec = ScanSpec {
             universe: vec!["AAA".into()],
             timeframe: None,
+            reference: None,
+            breadth: None,
             condition: cmp(),
             rank: None,
             limit: Some(0),
@@ -347,6 +398,8 @@ mod tests {
         let spec = ScanSpec {
             universe: vec!["AAA".into()],
             timeframe: None,
+            reference: None,
+            breadth: None,
             condition: nested,
             rank: None,
             limit: None,
@@ -364,6 +417,8 @@ mod tests {
         let spec = ScanSpec {
             universe: vec!["AAA".into()],
             timeframe: None,
+            reference: None,
+            breadth: None,
             condition: breadth,
             rank: None,
             limit: None,

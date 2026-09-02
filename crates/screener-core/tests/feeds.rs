@@ -173,6 +173,8 @@ fn spec_for(name: &str, params: Vec<f64>) -> ScanSpec {
     ScanSpec {
         universe: vec![SYMBOL.to_string()],
         timeframe: None,
+        reference: None,
+        breadth: None,
         condition: Condition::Cmp {
             left: Expr::Indicator {
                 name: name.to_string(),
@@ -288,13 +290,35 @@ fn trade_quote_indicators_need_trades_and_a_book() {
 }
 
 #[test]
-fn breadth_indicators_need_a_cross_section() {
+fn breadth_indicators_read_a_cross_section() {
     assert_matches_with_feed(
         "AdvanceDecline",
         vec![],
         with(|s| s.sections = Some(sections())),
     );
-    assert_rejected_without_feed("AdvanceDecline", vec![], "sections");
+}
+
+/// A batch scan holds the whole universe, so it assembles the panel itself and a
+/// breadth screen needs no second data source. A streaming caller has one symbol
+/// at a time and cannot, so there the feed is still required.
+#[test]
+fn a_batch_scan_derives_the_cross_section_but_a_streaming_one_cannot() {
+    use screener_core::Screener;
+
+    let spec = spec_for("AdvanceDecline", vec![]);
+    let report = scan_batch(candles_only(), &spec)
+        .expect("a batch scan assembles the panel from its own universe");
+    assert_eq!(report.matches.len(), 1);
+
+    let spec_json = serde_json::to_string(&spec).expect("serialize spec");
+    let mut screener = Screener::new(&spec_json).expect("valid spec");
+    let err = screener
+        .feed(SYMBOL, &candles()[0])
+        .expect_err("a streaming bar cannot carry a panel it has not been given");
+    assert!(
+        matches!(&err, Error::MissingFeed { feed, .. } if feed == "sections"),
+        "got {err}"
+    );
 }
 
 #[test]
@@ -535,6 +559,8 @@ fn required_feeds_lists_what_a_spec_needs() {
     let spec = ScanSpec {
         universe: vec![SYMBOL.to_string()],
         timeframe: None,
+        reference: None,
+        breadth: None,
         condition: Condition::All {
             conditions: vec![
                 spec_for("Microprice", vec![]).condition,
