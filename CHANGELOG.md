@@ -248,6 +248,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `actionlint` moves from 1.7.7 to 1.7.12, checksum taken from the release's own
   `checksums.txt`.
 
+### Security
+
+- `osv-scanner.toml` records the assessment of GHSA-6w46-j5rx-g56g (pytest tmpdir
+  handling, fixed in 9.0.3). Pinning the 3.9 row at `pytest==8.4.2` puts it
+  inside the advisory's range; `ci-dev-py3.txt` is on 9.1.1 and is outside it.
+  pytest is CI-only and never shipped, and the flaw is local — it needs a second
+  user on the machine, which an ephemeral single-user runner does not have.
+  Taking the fixed version on 3.9 would mean dropping Python 3.9 from the
+  support matrix, which is a different decision.
+
 ### Added
 
 - A non-blocking `links` job in `ci.yml`. `links.yml` stays authoritative and
