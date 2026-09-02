@@ -14,7 +14,7 @@
 
 **The data-driven multi-symbol screener core for Go, over the Wickra C ABI hub via cgo.**
 
-[Wickra Screener](https://github.com/wickra-lib/wickra-screener) folds a serde condition tree over each symbol's history against the Wickra library of 514 O(1) streaming indicators and scans the whole universe in parallel. This package is the Go binding: it consumes the C ABI hub through cgo and exposes the `Screener` handle with the same JSON protocol as every other binding.
+[Wickra Screener](https://github.com/wickra-lib/wickra-screener) folds a serde condition tree over each symbol's history against the Wickra library of 497 O(1) streaming indicators and scans the whole universe in parallel. This package is the Go binding: it consumes the C ABI hub through cgo and exposes the `Screener` handle with the same JSON protocol as every other binding.
 
 ## Install
 

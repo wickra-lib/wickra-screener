@@ -27,7 +27,7 @@
 
 # Wickra Screener
 
-**Scan thousands of symbols in parallel against data-driven conditions over 514 O(1) streaming indicators.**
+**Scan thousands of symbols in parallel against data-driven conditions over 497 O(1) streaming indicators.**
 
 > **▶ Live demo:** all 514 indicators over real Binance market data, computed live in your browser — **[live.wickra.org](https://live.wickra.org)** · zero backend, powered by `wickra-wasm`.
 
@@ -35,9 +35,10 @@
 
 Wickra Screener is one data-driven core, [`screener-core`](crates/screener-core):
 a serde **condition tree** (`ScanSpec`) is folded over each symbol's history with
-the [Wickra](https://github.com/wickra-lib/wickra) library of 514 O(1) streaming
-indicators, evaluated at the latest bar, and scanned across the whole universe in
-parallel (rayon) or sequentially (the WASM fallback) — **byte-for-byte identical**.
+the [Wickra](https://github.com/wickra-lib/wickra) indicator library — 497 of them
+resolvable by name — evaluated at the latest bar, and scanned across the whole
+universe in parallel (rayon) or sequentially (the WASM fallback) —
+**byte-for-byte identical**.
 
 Because conditions are **data, not code**, the exact same scan crosses the C ABI
 and WASM unchanged. The core is exposed as a **JSON-over-C-ABI data API**
@@ -157,11 +158,79 @@ examples/               one runnable "scan a small universe" example per languag
 
 ```bash
 cargo build --workspace
-cargo test  --workspace --all-features
-cargo test  --workspace --no-default-features   # sequential scan path
-cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo run -p wickra-screener -- --spec golden/specs/momentum.json --data golden/data
 ```
+
+## Building everything from source
+
+The Rust core, the CLI and the WASM package build from the workspace; each
+binding has its own toolchain and builds on its own.
+
+```bash
+# Rust core, CLI, C ABI, WASM crate
+cargo build --workspace --all-features
+
+# The fuzz crate is a detached workspace (cargo-fuzz builds it with sanitizer
+# flags on nightly), so --workspace does not reach it.
+cargo check --manifest-path fuzz/Cargo.toml
+
+# Python: an abi3 wheel via maturin
+python -m venv .venv && . .venv/bin/activate
+pip install maturin pytest
+maturin develop --release -m bindings/python/Cargo.toml
+
+# Node.js: a native addon via napi-rs
+( cd bindings/node && npm ci && npm run build )
+
+# WASM: a browser/bundler package via wasm-pack
+wasm-pack build bindings/wasm --target bundler --out-dir pkg
+
+# C ABI: the cdylib and staticlib every non-native binding links against
+cargo build -p wickra-screener-c --release
+
+# C / C++: the example harness, which is also the header smoke test
+cmake -S examples/c -B examples/c/build && cmake --build examples/c/build
+
+# C# · Go · Java · R link the C ABI above; each needs it built first
+( cd bindings/csharp && dotnet build )
+( cd bindings/go && go build ./... )
+( cd bindings/java && mvn -q package )
+R CMD INSTALL bindings/r
+```
+
+`--features live` on the workspace or the CLI adds the exchange-sourced universe;
+it pulls the networking stack in, so it is off by default.
+
+## Testing
+
+```bash
+# The core, in both scan configurations — they must agree byte for byte
+cargo test --workspace --all-features
+cargo test --workspace --no-default-features
+
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+cargo clippy --workspace --all-targets --no-default-features -- -D warnings
+cargo fmt --all --check
+cargo deny check
+
+# Per binding
+"$(pwd)/.venv/bin/python" -m pytest bindings/python/tests -q
+( cd bindings/node && npm test )
+( cd bindings/go && go test ./... )
+( cd bindings/java && mvn -q test )
+( cd bindings/csharp && dotnet test )
+Rscript bindings/r/tests/run_tests.R
+ctest --test-dir examples/c/build --output-on-failure
+
+# Fuzzing (nightly)
+cargo +nightly fuzz run spec_parse -- -max_total_time=30
+```
+
+Every binding runs the same committed corpus under [`golden/`](golden/) and has
+to reproduce each expected report **byte for byte** — that is what makes the
+cross-language claim checkable rather than asserted. Regenerating those files is
+`cargo test -p screener-core --test golden -- --ignored`, and the diff is meant
+to be read before it is committed.
 
 ## Requirements
 

@@ -3,7 +3,7 @@
 `wickra-screener` is one data-driven core with many thin consumers. A screen is a
 piece of **data** — a serde condition tree (`ScanSpec`) — that is folded over each
 symbol's history with the [Wickra](https://github.com/wickra-lib/wickra) library
-of 514 O(1) streaming indicators and evaluated across the whole universe. Because
+of 497 O(1) streaming indicators and evaluated across the whole universe. Because
 the screen is data, not code, the exact same scan runs natively, across the C ABI
 and in WASM, byte-for-byte identical.
 
@@ -64,7 +64,7 @@ symbols (those past their indicators' warmup) take part.
 
 No indicator mathematics lives in this repository. `IndicatorSet` resolves each
 building block from the `wickra-core` registry by name and parameters (the same
-resolver the backtester uses), so the screener inherits all 514 indicators and
+resolver the backtester uses), so the screener inherits all 497 indicators and
 any future additions for free. Price fields read straight from the candle.
 
 ## Integration with the rest of Wickra

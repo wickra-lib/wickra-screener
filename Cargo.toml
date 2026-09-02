@@ -1,7 +1,7 @@
 # Wickra Screener — workspace.
 # A parallel multi-symbol screener built as one data-driven core
 # (`screener-core`): a serde condition tree (ScanSpec) is folded over each
-# symbol's history with 514 O(1) streaming indicators, evaluated per bar, and
+# symbol's history with 497 O(1) streaming indicators, evaluated per bar, and
 # scanned in parallel (rayon) or sequentially (the WASM fallback), byte-for-byte
 # identical. The core is exposed as a JSON-over-C-ABI data API in ten languages,
 # mirroring the Wickra tiering: Rust core -> native Python/Node/WASM + a C ABI

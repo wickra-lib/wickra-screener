@@ -3,10 +3,12 @@ message: "If you use this software, please cite it as below."
 title: "wickra-screener"
 abstract: >-
   A parallel multi-symbol screener built on the Wickra core: a data-driven
-  condition tree (ScanSpec) is folded over each symbol's history with 514 O(1)
+  condition tree (ScanSpec) is folded over each symbol's history with 497 O(1)
   streaming indicators and scanned across the whole universe, exposed as a
   JSON-over-C-ABI data API in ten languages.
 type: software
+version: "0.1.0"
+date-released: "2026-09-02"
 authors:
   - alias: kingchenc
     website: "https://wickra.org"

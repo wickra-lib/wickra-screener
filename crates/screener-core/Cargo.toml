@@ -1,6 +1,6 @@
 [package]
 name = "screener-core"
-description = "Data-driven core of the Wickra screener: a serde ScanSpec condition tree folded over a symbol universe with 514 O(1) streaming indicators."
+description = "Data-driven core of the Wickra screener: a serde ScanSpec condition tree folded over a symbol universe with 497 O(1) streaming indicators."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -25,9 +25,10 @@ parallel = ["dep:rayon"]
 live = ["dep:wickra-exchange"]
 
 [dependencies]
-# Streaming indicators (514 O(1) indicators) resolved by name + params via the
-# backtester's registry factory (the only name -> indicator resolver); it pulls
-# in wickra-core transitively.
+# Streaming indicators resolved by name + params via the registry factory (the
+# only name -> indicator resolver in the ecosystem, and what decides that 497 of
+# the library's indicators are reachable from a scan); it pulls in wickra-core
+# transitively.
 wickra-backtest-core.workspace = true
 wickra-core.workspace = true
 # Candle + CSV loading for the universe data.
