@@ -7,4 +7,7 @@
 #
 # Locked output: ci-dev-py39.txt. Refresh via scripts/update-lockfiles.sh.
 maturin
-pytest
+# Capped rather than left to the resolver. `uv --python-version 3.9` already
+# picks 8.x, but a declared bound is what makes a hand-edit or a security-update
+# bump to 9.x fail at compile time instead of at install time on the 3.9 runner.
+pytest<9

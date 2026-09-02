@@ -334,4 +334,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   idiom, the truncation retry, and a different command abandoning a queued
   response. Each was confirmed to fail with the fix removed.
 
+### Changed
+
+- Dependabot manages `.github/requirements/` explicitly, with version-update
+  pull requests disabled. It edits the hash-locked `.txt` directly and does not
+  know which interpreter each lock was resolved against, so a bump lands a
+  version the row cannot install — `ci-dev-py39.txt` exists precisely because
+  pytest 9 and iniconfig 2.3 require Python 3.10. Regeneration goes through
+  `scripts/update-lockfiles.sh`. Security updates stay exempt and still arrive,
+  which is the intent: they are judged one at a time. The first, pytest
+  GHSA-6w46-j5rx-g56g, proposed 9.0.3 for both files — a downgrade for
+  `ci-dev-py3.txt`, already on 9.1.1, and an impossible install for the 3.9 row.
+- `ci-dev-py39.in` caps `pytest<9`. The resolver already picks 8.x for that
+  target, but a declared bound makes a hand-edit fail at compile time rather than
+  at install time on the 3.9 runner. The lock is byte-identical.
+
 [Unreleased]: https://github.com/wickra-lib/wickra-screener/commits/main
