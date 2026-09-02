@@ -36,14 +36,17 @@ categories = ["finance", "command-line-utilities"]
 # USER-GO gated) and is used only by the optional `live` universe feature. A
 # `version` is pinned alongside `git` so the dependency is not a wildcard
 # (cargo-deny's `bans.wildcards = deny`).
-wickra-core = "0.9"
-wickra-data = "0.9"
+# Held at the same major as the copy `wickra-backtest-core` resolves, so the
+# tree carries one `wickra-core` and one set of indicator types rather than two
+# incompatible ones.
+wickra-core = "1.0"
+wickra-data = "1.0"
 wickra-exchange = { git = "https://github.com/wickra-lib/wickra-exchange", version = "0.1" }
 # The only name -> indicator registry in the ecosystem: the backtester's factory
-# resolves any of the 514 indicators by name + params into an object-safe
-# EvalIndicator. Consumed from git until its first crates.io release; a `version`
-# is pinned alongside `git` so it is not a wildcard (cargo-deny bans.wildcards).
-wickra-backtest-core = { git = "https://github.com/wickra-lib/wickra-backtest", version = "0.1" }
+# resolves an indicator by name + params into an object-safe EvalIndicator, and
+# `registry::feed_of` reports which feed family that indicator consumes. Now on
+# crates.io, so the screener no longer carries a git dependency for it.
+wickra-backtest-core = "0.1.2"
 # Workspace-internal crate, referenced by the CLI, bench and bindings.
 screener-core = { version = "0.1.0", path = "crates/screener-core" }
 # Serialization — the data-driven boundary (spec/command/report as JSON).

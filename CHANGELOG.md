@@ -28,4 +28,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`deny.toml`, `osv-scanner.toml`, `lychee.toml`), lint configuration
   (`clippy.toml`), `repo-metadata.toml`, and dual `MIT OR Apache-2.0` licensing.
 
+### Changed
+
+- `wickra-backtest-core` is consumed from crates.io (0.1.2) instead of git. It
+  carries the indicator registry the screener resolves names through; taking it
+  from the registry removes a git dependency from the published dependency graph
+  and picks up `registry::feed_of` and the `StepFeeds` per-bar feed document.
+- `wickra-core` and `wickra-data` move from `0.9` to `1.0`, the major
+  `wickra-backtest-core` 0.1.2 resolves, so a default build links one copy of the
+  indicator types rather than two incompatible ones.
+
 [Unreleased]: https://github.com/wickra-lib/wickra-screener/commits/main
