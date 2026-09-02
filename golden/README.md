@@ -67,8 +67,11 @@ open(i)   = close(i-1)                    (open(1) = base)
 high(i)   = max(open, close) + amp * 0.05
 low(i)    = min(open, close) - amp * 0.05
 volume(i) = 1000 + 5 * i
-ts(i)     = 1_700_000_000 + (i-1) * 3600  (hourly)
+timestamp(i) = 1_700_000_000 + (i-1) * 3600  (hourly)
 ```
+
+The CSV header names the columns the CLI reads by name:
+`timestamp,open,high,low,close,volume`.
 
 Every value is written with exactly four decimals (`{:.4f}`), so the CSV text and
 the JSON dataset parse to the **identical** `f64` — this is what makes the golden

@@ -333,5 +333,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Three C ABI unit tests pinning the single-execution contract: the two-call
   idiom, the truncation retry, and a different command abandoning a queued
   response. Each was confirmed to fail with the fix removed.
+### Changed
+
+- The CLI reads its `<SYMBOL>.csv` universe through `wickra-data`, the
+  ecosystem's own OHLCV reader, and the dependency moved to the crate that
+  actually loads candles. `screener-core` declared it as "Candle + CSV loading
+  for the universe data" and no Rust file referenced it; the CLI hand-rolled its
+  own parser in a different crate.
+
+  **This changes the accepted CSV format.** The header must now name `timestamp`,
+  `open`, `high`, `low`, `close` and `volume`. Columns are matched by name, so
+  their order does not matter and extra columns are ignored — the old parser read
+  the first six positionally and accepted any header, or none, so a file whose
+  columns were in a different order was screened as if they were not. A leading
+  UTF-8 byte-order mark, which spreadsheet exports add, is stripped, and a bar
+  whose values are not finite or whose high sits below its low is now rejected
+  rather than screened. The committed fixtures move from `ts` to `timestamp`, and
+  README and `golden/README.md` state the format, which neither did before.
+
+  All six candle-only golden specs read from CSV produce byte-identical reports
+  to `golden/expected/*.json`, so no value moved.
 
 [Unreleased]: https://github.com/wickra-lib/wickra-screener/commits/main
