@@ -73,8 +73,12 @@ cargo run -p wickra-screener -- --spec golden/specs/momentum.json --data golden/
 cargo run -p wickra-screener -- --spec golden/specs/momentum.json --data golden/data --format json
 ```
 
-Each `<SYMBOL>.csv` in the `--data` directory is one symbol's candle history; or
-pass a JSON dataset on standard input with `--stdin`. Built with the optional
+Each `<SYMBOL>.csv` in the `--data` directory is one symbol's candle history. The
+first row must be a header naming `timestamp`, `open`, `high`, `low`, `close` and
+`volume`; the columns are matched by name, so their order does not matter and any
+extra columns are ignored. A leading UTF-8 byte-order mark, which spreadsheet
+exports add, is stripped. Or pass a JSON dataset on standard input with
+`--stdin`. Built with the optional
 `live` feature, `--live <venue>` pulls the spec's universe straight from one of
 the ten exchanges the [wickra-exchange](https://github.com/wickra-lib/wickra-exchange)
 facade supports — public market data only, no key sent and no order placed:

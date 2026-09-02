@@ -34,5 +34,10 @@ live = ["screener-core/live"]
 [dependencies]
 # The data-driven scan core.
 screener-core.workspace = true
+# Reads the `<SYMBOL>.csv` universe. The ecosystem's own OHLCV CSV reader:
+# validates the header, strips a leading UTF-8 BOM (spreadsheet exports carry
+# one) and checks the OHLC invariants, none of which the hand-rolled parser here
+# used to do.
+wickra-data.workspace = true
 serde_json.workspace = true
 clap.workspace = true
