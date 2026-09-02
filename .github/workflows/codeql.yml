@@ -5,8 +5,12 @@ name: CodeQL
 #
 # `build-mode: none` analyses source directly, which is right for Rust, Python
 # and JavaScript. C# and Java are compiled: without a build no call resolves, and
-# GitHub marks such an analysis as lower quality. Both use `autobuild`, which
-# runs the project's own build and gives the queries a real call graph.
+# GitHub marks such an analysis as lower quality.
+#
+# C# autobuilds -- the .csproj files are where it looks. Java does not: the pom
+# is under bindings/java, and autobuild only searches the checkout root, so it
+# reports "could not detect a suitable build command". Java therefore builds
+# manually, with the one command that works.
 #
 # .github/codeql-config.yml keeps generated and vendored files out of the
 # analysis; without it each new binding arrives as a batch of findings about code
@@ -49,7 +53,7 @@ jobs:
           - language: csharp
             build-mode: autobuild
           - language: java-kotlin
-            build-mode: autobuild
+            build-mode: manual
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -62,6 +66,12 @@ jobs:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
           config-file: ./.github/codeql/codeql-config.yml
+
+      # The binding compiles on its own: it is a thin wrapper over the C ABI and
+      # the native library is only needed to run, not to build.
+      - name: Build the Java binding for the manual build mode
+        if: matrix.language == 'java-kotlin'
+        run: mvn -B -f bindings/java package -DskipTests
 
       - name: Perform CodeQL analysis
         uses: github/codeql-action/analyze@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4.37.3
