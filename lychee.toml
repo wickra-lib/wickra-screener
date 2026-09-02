@@ -25,3 +25,16 @@ exclude = [
     "^https?://www\\.nuget\\.org/packages/Wickra\\.Screener",
     "^https?://central\\.sonatype\\.com/artifact/org\\.wickra/wickra-screener",
 ]
+
+# Directories that hold markdown which is not ours to check: dependency trees,
+# build output and tool caches. Needed once the scan widened from a hand-listed
+# pair of globs to the whole tree.
+exclude_path = [
+    "node_modules",
+    "target",
+    ".venv",
+    "__pycache__",
+    ".pytest_cache",
+    "bin",
+    "obj",
+]

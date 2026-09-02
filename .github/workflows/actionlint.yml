@@ -21,8 +21,8 @@ env:
   # GitHub Action, and `taiki-e/install-action` does not carry it, so the release
   # binary is fetched directly -- which is fine as long as what arrives is
   # checked against what was expected.
-  ACTIONLINT_VERSION: "1.7.7"
-  ACTIONLINT_SHA256: "023070a287cd8cccd71515fedc843f1985bf96c436b7effaecce67290e7e0757"
+  ACTIONLINT_VERSION: "1.7.12"
+  ACTIONLINT_SHA256: "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
 
 jobs:
   actionlint:

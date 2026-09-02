@@ -23,3 +23,21 @@ records the union of optional dependencies, which is what OSV-Scanner reads.
 
 Revisit when rust_decimal moves to rkyv 0.8, at which point the entry can go.
 """
+
+# pytest 8.4.2 in .github/requirements/ci-dev-py39.txt. The advisory covers
+# pytest through 9.0.2, so this pin is inside it; ci-dev-py3.txt is on 9.1.1 and
+# is not.
+#
+# The 3.9 row cannot move: pytest >= 9.0 declares requires-python >= 3.10, so
+# taking the fixed version there means dropping Python 3.9 from the support
+# matrix -- a decision about who can install wickra-screener, not about this
+# advisory. It resolves itself when 3.9 goes.
+[[IgnoredVulns]]
+id = "GHSA-6w46-j5rx-g56g"
+reason = """
+pytest is a CI-only test dependency and is never shipped in any published
+artefact. The flaw is local (CVSS AV:L): it needs a second user on the machine
+to pre-create /tmp/pytest-of-<user>, which a single-user ephemeral GitHub runner
+does not have. Pinned at 8.4.2 because pytest 9 requires Python >= 3.10 and the
+3.9 matrix row needs a version that installs there.
+"""

@@ -125,6 +125,26 @@ jobs:
           tool: osv-scanner
       - run: osv-scanner scan source --recursive .
 
+  # Advisory, never blocking. links.yml stays the authoritative run: external
+  # link rot is non-deterministic, so a third-party outage must not be able to
+  # fail a pull request. But a weekly job means a link this PR breaks is found
+  # up to seven days later, by which time it reads as unrelated. This surfaces it
+  # now and cannot stop anything -- `continue-on-error` keeps the result visible
+  # in the checks list while leaving the conclusion neutral.
+  links:
+    name: Links (advisory)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          args: --config lychee.toml --no-progress --root-dir "${{ github.workspace }}" "**/*.md"
+          fail: true
+
   # Four static checks that no other job can fail on. Each exists because the
   # thing it guards is invisible to the rest of CI: the golden corpus compares
   # values, so a binding that lost a method has no test to run; a version that
@@ -277,7 +297,10 @@ jobs:
       - name: Python
         shell: bash
         run: |
-          python -m pip install --upgrade pip maturin
+          python -m pip install --upgrade pip
+          # Same hash-locked tooling the python job installs. This step uses the
+          # runner's own interpreter, which is 3.10+, so the py3 lock applies.
+          python -m pip install --require-hashes -r .github/requirements/ci-dev-py3.txt
           ( cd bindings/python && maturin build --release --out dist )
           python -m pip install --no-index --find-links bindings/python/dist wickra-screener
           out=$(python examples/python/scan.py)
@@ -388,7 +411,19 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - uses: ./.github/actions/setup-rust
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
-      - run: pip install maturin pytest
+      - name: Install Python dev dependencies
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          # Hash-locked dev tooling (OpenSSF Scorecard PinnedDependencies).
+          # Split by Python version: pytest >= 9.0 and iniconfig >= 2.3 both
+          # declare requires-python >= 3.10, so one resolution cannot serve the
+          # 3.9 row and the rest of the matrix.
+          if [ "${{ matrix.python-version }}" = "3.9" ]; then
+            python -m pip install --require-hashes -r .github/requirements/ci-dev-py39.txt
+          else
+            python -m pip install --require-hashes -r .github/requirements/ci-dev-py3.txt
+          fi
       - run: maturin build --out dist
         working-directory: bindings/python
       - run: pip install --no-index --find-links bindings/python/dist wickra-screener
