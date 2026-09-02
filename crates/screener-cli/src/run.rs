@@ -7,6 +7,7 @@ use std::fmt::Write as _;
 use std::fs;
 use std::io::Read;
 use std::path::Path;
+use wickra_data::csv::CandleReader;
 
 /// Load the inputs, run the scan and return the rendered output.
 pub fn run(args: &Args) -> Result<String, String> {
@@ -94,9 +95,7 @@ fn load_data_dir(dir: &Path) -> Result<BTreeMap<String, SymbolInput>, String> {
             .and_then(|s| s.to_str())
             .ok_or_else(|| format!("bad file name: {}", path.display()))?
             .to_string();
-        let content =
-            fs::read_to_string(&path).map_err(|e| format!("read {}: {e}", path.display()))?;
-        data.insert(symbol, parse_csv(&content)?.into());
+        data.insert(symbol, read_candles(&path)?.into());
     }
     Ok(data)
 }
@@ -116,43 +115,36 @@ fn load_stdin() -> Result<BTreeMap<String, SymbolInput>, String> {
     serde_json::from_str(&buf).map_err(|e| format!("parse stdin dataset: {e}"))
 }
 
-/// Parse OHLCV rows (`ts,open,high,low,close,volume`) into candles; a
-/// non-numeric first row is treated as a header and skipped.
-fn parse_csv(content: &str) -> Result<Vec<Candle>, String> {
-    let mut candles = Vec::new();
-    for (idx, line) in content.lines().enumerate() {
-        let line = line.trim();
-        if line.is_empty() {
-            continue;
-        }
-        let cols: Vec<&str> = line.split(',').map(str::trim).collect();
-        if cols.len() < 6 {
-            return Err(format!(
-                "CSV line {}: expected 6 columns, got {}",
-                idx + 1,
-                cols.len()
-            ));
-        }
-        let time = match cols[0].parse::<i64>() {
-            Ok(t) => t,
-            Err(_) if idx == 0 => continue, // header row
-            Err(e) => return Err(format!("CSV line {}: bad timestamp: {e}", idx + 1)),
-        };
-        let field = |i: usize, name: &str| {
-            cols[i]
-                .parse::<f64>()
-                .map_err(|e| format!("CSV line {}: {name}: {e}", idx + 1))
-        };
-        candles.push(Candle {
-            time,
-            open: field(1, "open")?,
-            high: field(2, "high")?,
-            low: field(3, "low")?,
-            close: field(4, "close")?,
-            volume: field(5, "volume")?,
-        });
-    }
-    Ok(candles)
+/// Read one symbol's candles from a CSV file through `wickra-data`.
+///
+/// The header must name `timestamp,open,high,low,close,volume`; extra columns
+/// are ignored and the order does not matter, because the columns are matched by
+/// name. That is stricter than the parser this replaced, which read the first six
+/// columns positionally and accepted any header, or none -- so a file whose
+/// columns were in a different order was screened as if they were not.
+///
+/// `wickra-data` also strips a leading UTF-8 BOM (spreadsheet exports carry one,
+/// and it otherwise becomes part of the first column name) and rejects a bar
+/// whose OHLC values are not finite or whose high is below its low.
+fn read_candles(path: &Path) -> Result<Vec<Candle>, String> {
+    let mut reader =
+        CandleReader::open(path).map_err(|e| format!("read {}: {e}", path.display()))?;
+    let candles = reader
+        .read_all()
+        .map_err(|e| format!("read {}: {e}", path.display()))?;
+    // `wickra-data` yields the core candle; the scan takes the backtester's,
+    // which is a distinct type with the same six fields.
+    Ok(candles
+        .into_iter()
+        .map(|c| Candle {
+            time: c.timestamp,
+            open: c.open,
+            high: c.high,
+            low: c.low,
+            close: c.close,
+            volume: c.volume,
+        })
+        .collect())
 }
 
 /// Render a report as an aligned text table.
@@ -243,18 +235,71 @@ fn missing_note(report: &ScanReport) -> String {
 mod tests {
     use super::*;
 
+    /// Write `body` to a temporary `.csv` and read it back through the loader.
+    fn read_csv(name: &str, body: &str) -> Result<Vec<Candle>, String> {
+        let path = std::env::temp_dir().join(format!("wickra-screener-{name}.csv"));
+        fs::write(&path, body).unwrap();
+        let result = read_candles(&path);
+        let _ = fs::remove_file(&path);
+        result
+    }
+
     #[test]
-    fn parses_csv_with_a_header() {
-        let csv = "ts,open,high,low,close,volume\n1,10,11,9,10.5,100\n2,10.5,12,10,11,200\n";
-        let candles = parse_csv(csv).unwrap();
+    fn reads_a_csv_with_the_named_columns() {
+        let candles = read_csv(
+            "named",
+            "timestamp,open,high,low,close,volume\n1,10,11,9,10.5,100\n2,10.5,12,10,11,200\n",
+        )
+        .unwrap();
         assert_eq!(candles.len(), 2);
         assert_eq!(candles[0].time, 1);
         assert!((candles[1].close - 11.0).abs() < 1e-9);
     }
 
+    /// Columns are matched by name, so their order in the file does not matter.
+    /// The parser this replaced read the first six positionally and would have
+    /// read this file as open=100, high=10.5 rather than by their names.
     #[test]
-    fn parse_csv_rejects_a_short_row() {
-        assert!(parse_csv("1,2,3\n").is_err());
+    fn column_order_does_not_matter() {
+        let candles = read_csv(
+            "reordered",
+            "volume,close,low,high,open,timestamp\n100,10.5,9,11,10,1\n",
+        )
+        .unwrap();
+        assert_eq!(candles.len(), 1);
+        assert_eq!(candles[0].time, 1);
+        assert!((candles[0].open - 10.0).abs() < 1e-9);
+        assert!((candles[0].high - 11.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn rejects_a_header_missing_a_column() {
+        let err = read_csv("short", "timestamp,open,high,low,close\n1,10,11,9,10.5\n").unwrap_err();
+        assert!(
+            err.contains("volume"),
+            "error should name the column: {err}"
+        );
+    }
+
+    #[test]
+    fn rejects_a_bar_whose_high_is_below_its_low() {
+        assert!(read_csv(
+            "inverted",
+            "timestamp,open,high,low,close,volume\n1,10,5,9,10.5,100\n",
+        )
+        .is_err());
+    }
+
+    /// Spreadsheet exports prefix the file with a UTF-8 BOM, which would
+    /// otherwise become part of the first column name and fail the header check.
+    #[test]
+    fn tolerates_a_leading_byte_order_mark() {
+        let candles = read_csv(
+            "bom",
+            "\u{feff}timestamp,open,high,low,close,volume\n1,10,11,9,10.5,100\n",
+        )
+        .unwrap();
+        assert_eq!(candles.len(), 1);
     }
 
     #[test]

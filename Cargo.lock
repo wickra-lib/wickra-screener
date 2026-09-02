@@ -2034,7 +2034,6 @@ dependencies = [
  "toml",
  "wickra-backtest-core",
  "wickra-core",
- "wickra-data",
  "wickra-exchange",
 ]
 
@@ -2857,6 +2856,7 @@ dependencies = [
  "clap",
  "screener-core",
  "serde_json",
+ "wickra-data",
 ]
 
 [[package]]
