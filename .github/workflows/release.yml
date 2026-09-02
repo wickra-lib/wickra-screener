@@ -336,6 +336,19 @@ jobs:
         working-directory: bindings/node
         run: npx napi artifacts --output-dir artifacts
 
+      # Each platform package is published on its own and each declares
+      # `MIT OR Apache-2.0`, so each needs the texts that claim refers to.
+      # Listing them in `files` is half of it; they have to be in the directory
+      # when npm packs it, and nothing put them there.
+      - name: Stage the licence texts into each platform package
+        shell: bash
+        run: |
+          set -e
+          for dir in bindings/node/npm/*/; do
+            cp LICENSE-MIT LICENSE-APACHE "$dir"
+          done
+          echo "staged licences:"; ls -1 bindings/node/npm/*/LICENSE-* | sort
+
       - name: Publish platform packages (idempotent)
         working-directory: bindings/node
         env:

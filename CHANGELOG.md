@@ -137,6 +137,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   to the JSON surface would have left them broken in the repository with every
   check green.
 
+### Fixed
+
+- The release workflow no longer publishes from a branch. A `workflow_dispatch`
+  can be started from any ref, and every job in it pushes to a registry that does
+  not take things back, so a dispatch from `main` would have published whatever
+  `main` was at the time. A guard job refuses anything but a `v*` tag.
+- `github-release` waits on every job that produces something it attaches.
+  `csharp-publish`, `java-publish` and `go-mirror` were missing, so a run in
+  which one of them failed still published a release page that read as complete.
+- The NuGet package and the jar reach the release page. Both were published to
+  their registries and neither was uploaded as an artefact, so the `find` that
+  was supposed to collect the `.nupkg` matched nothing — silently, because a
+  `find` that matches nothing succeeds.
+- Build provenance covers the NuGet package, the jar and the C ABI archives, not
+  only the crates and wheels.
+- `go-mirror` builds, vets and tests the assembled module before pushing it.
+  Three steps copied files into a tree and the fourth published it, so a mirror
+  that does not compile became `go get`'s problem rather than the workflow's.
+- The six npm platform packages carry the licence texts their `license` field
+  names. They declared `MIT OR Apache-2.0` and shipped neither text.
+
 ### Security
 
 - `js-yaml` moves from 4.3.0 to 4.3.2 (GHSA-5p4m-2wfm-xmqj, CVSS 7.5), a
