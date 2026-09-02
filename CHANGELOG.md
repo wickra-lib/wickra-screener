@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `screener-core`: the data-driven scan engine — a serde `ScanSpec` (expressions,
   the `cmp` / `cross_section` / `breadth` / `all` / `any` / `not` condition tree,
   rank + limit) folded over each symbol's history against the Wickra library of
-  514 O(1) streaming indicators. Batch (`scan_batch`) and streaming
+  497 O(1) streaming indicators. Batch (`scan_batch`) and streaming
   (`feed` / `evaluate`) paths that produce a byte-identical report, parallel
   (rayon) or sequential (the WASM fallback).
 - `wickra-screener` CLI: run a spec over a directory of CSV candle files or a
@@ -203,6 +203,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The status claims match the repository. `ROADMAP.md` called phase 0 *in
+  progress* and left phases 1 to 8 statusless while the README called the project
+  functionally complete; all nine have landed and now say so. Two places still
+  described this repository as screening over 514 indicators — the banner alt
+  text and the entry above — where the registry reaches 497; the 514 references
+  to the `wickra` library itself and to the sibling projects are correct and
+  stay.
+- `ROADMAP.md` no longer says the non-crates.io artefacts are unconstrained by
+  the `wickra-exchange` git dependency. They are, indirectly: `github-release`
+  needs `cargo-publish`, so a tag pushed while that crate is unpublished produces
+  no release page and no assets at all. The section now shows the failing
+  `cargo publish --dry-run` and names both ways out.
 - The Python wheel and sdist carry `LICENSE-MIT` and `LICENSE-APACHE`. The
   manifest declared `MIT OR Apache-2.0` and shipped neither text, so maturin —
   which picks up any `LICEN[CS]E*` beside the manifest — had nothing to pick up,
