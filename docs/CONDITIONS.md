@@ -21,7 +21,7 @@ WASM unchanged. This page is the reference for its shape.
 |-------|----------|---------|
 | `universe` | yes | the symbols to scan (non-empty). A scan folds exactly these: data for a symbol outside the universe is ignored, and a universe symbol no data arrived for is named in the report's `missing`. Feeding an unnamed symbol to a streaming screener is refused. |
 | `reference` | no | a universe symbol whose close feeds the pairwise indicators of every other symbol, read at the same bar. The convenient form of the reference feed: name the benchmark once instead of repeating its series under every symbol. A per-symbol `reference` series in the feeds wins where both are given, which is how a benchmark outside the universe is expressed. |
-| `breadth` | no | how the cross-section the screener assembles for itself is parameterised: `period` is the lookback for new highs and lows (default 52) and `ma_period` the average `above_ma` compares against (default 200). |
+| `breadth` | no | how the cross-section the screener assembles for itself is parameterised: `period` is the lookback for new highs and lows (default 52), `ma_period` the average `above_ma` compares against (default 200), and `pnf_box` / `pnf_reversal` the point-and-figure box (as a fraction of the symbol's first close, default 0.01) and reversal (default 3) behind `on_buy_signal`. |
 | `condition` | yes | the condition tree evaluated at the last bar |
 | `rank` | no | order matches by an expression; `desc` picks direction |
 | `limit` | no | keep at most N matches after ranking (positive) |

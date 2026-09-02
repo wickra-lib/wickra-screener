@@ -1,7 +1,7 @@
 //! The scan specification: comparators, the condition tree, ranking and the
 //! top-level [`ScanSpec`].
 
-use crate::breadth::{BreadthSpec, NEEDS_BUY_SIGNAL};
+use crate::breadth::BreadthSpec;
 use crate::error::{Error, Result};
 use crate::expr::Expr;
 use crate::feeds::{Available, FeedKind};
@@ -230,18 +230,6 @@ impl ScanSpec {
                 return Ok(());
             };
             let kind = feed_kind(name).ok_or_else(|| Error::UnknownIndicator(name.clone()))?;
-            if kind == FeedKind::CrossSection
-                && available.sections_are_derived
-                && name == NEEDS_BUY_SIGNAL
-            {
-                // The derived panel carries every member signal that can be read
-                // off a candle. This one cannot, so answering with a panel where
-                // it is false for every symbol would report a confident zero.
-                return Err(Error::UnderivableSignal {
-                    indicator: name.clone(),
-                    signal: "point-and-figure buy".to_string(),
-                });
-            }
             if available.has(kind) {
                 return Ok(());
             }
