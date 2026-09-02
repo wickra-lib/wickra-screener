@@ -140,14 +140,9 @@ mod tests {
 
     #[test]
     fn an_exchange_candle_becomes_a_scan_candle() {
-        let candle = ExchangeCandle {
-            open: 1.0,
-            high: 3.0,
-            low: 0.5,
-            close: 2.0,
-            volume: 100.0,
-            timestamp: 1_700_000_000,
-        };
+        // The candle type is `#[non_exhaustive]` upstream, so it is built
+        // through the validating constructor rather than a field literal.
+        let candle = ExchangeCandle::new(1.0, 3.0, 0.5, 2.0, 100.0, 1_700_000_000).unwrap();
         let converted = to_scan_candle(&candle);
         assert_eq!(converted.time, 1_700_000_000);
         // The conversion moves the fields across unchanged, so the values are
