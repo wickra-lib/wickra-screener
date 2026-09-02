@@ -129,6 +129,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is refused against a live universe by the same feed check that refuses it
   against a file.
 
+### Added
+
+- An `examples` CI job that builds and runs every runnable example and checks
+  each one's output. Only `examples/rust` was ever compiled — it is a workspace
+  member, so cargo built it; the other seven were built by nothing, so a change
+  to the JSON surface would have left them broken in the repository with every
+  check green.
+
 ### Security
 
 - `js-yaml` moves from 4.3.0 to 4.3.2 (GHSA-5p4m-2wfm-xmqj, CVSS 7.5), a

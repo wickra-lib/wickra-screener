@@ -52,3 +52,8 @@ bindings/r/..Rcheck/
 .env.*
 *.key
 secrets/
+
+# Example build output. The Java example is compiled to a directory beside it by
+# the command in its own header comment, and by the `examples` CI job.
+examples/java/out/
+examples/c/build/

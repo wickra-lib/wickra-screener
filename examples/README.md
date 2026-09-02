@@ -47,3 +47,8 @@ Every example prints the version and the scan report, for example:
 wickra-screener 0.1.0
 {"matches":[{"symbol":"BBB","matched":true,"values":{"price.close":15.0}}],"scanned":2}
 ```
+
+Every example here is built and run by the `examples` CI job on each push, and
+its output is checked rather than only its exit status — an example that starts
+and prints nothing fails. The C and C++ examples are built and run by the
+`c-abi` job through CMake and ctest, where their toolchain already is.

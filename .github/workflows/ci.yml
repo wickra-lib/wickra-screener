@@ -194,6 +194,129 @@ jobs:
         run: cargo +nightly fuzz run --target x86_64-unknown-linux-gnu feed_payload -- -max_total_time=30
         working-directory: fuzz
 
+  # The runnable examples are the first thing a reader copies, and only
+  # examples/rust was ever compiled -- it is a workspace member, so cargo built
+  # it. The other seven were not built by anything: a change to the JSON surface
+  # would have left them broken in the repository with every check green.
+  #
+  # Each one prints the same report, so each is checked for the same match rather
+  # than only for exiting zero. The C and C++ examples are built and run by the
+  # `c-abi` job through CMake and ctest, which is where their toolchain already
+  # is.
+  examples:
+    name: Examples
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-rust
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+      - name: Build the C ABI library the non-native bindings link against
+        run: cargo build -p wickra-screener-c --release
+
+      - name: Stage the native library for Go and put it on the loader path
+        shell: bash
+        run: |
+          mkdir -p bindings/go/lib/linux_amd64
+          cp target/release/libwickra_screener.so bindings/go/lib/linux_amd64/
+          echo "LD_LIBRARY_PATH=$PWD/target/release:$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
+
+      # Every example prints the same one-symbol report; this is what each run is
+      # checked against, so an example that starts and prints nothing fails.
+      - name: Rust
+        shell: bash
+        run: |
+          out=$(cargo run -q -p wickra-screener-example)
+          echo "$out"
+          echo "$out" | grep -q '"symbol":"BBB"'
+
+      # `maturin develop` wants a virtualenv; the python job builds a wheel and
+      # installs it instead, which needs none. Same route here.
+      - name: Python
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip maturin
+          ( cd bindings/python && maturin build --release --out dist )
+          python -m pip install --no-index --find-links bindings/python/dist wickra-screener
+          out=$(python examples/python/scan.py)
+          echo "$out"
+          echo "$out" | grep -q '"symbol":"BBB"'
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        id: setup_node_examples
+        continue-on-error: true
+        with:
+          node-version: "22"
+      - name: Pause before retrying the toolchain download
+        if: steps.setup_node_examples.outcome == 'failure'
+        run: sleep 30
+        shell: bash
+      - name: Retry the toolchain download
+        if: steps.setup_node_examples.outcome == 'failure'
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+      - name: Node.js
+        shell: bash
+        run: |
+          ( cd bindings/node && npm install --no-audit --no-fund && npx napi build --platform --release )
+          ( cd examples/node && npm install --no-audit --no-fund )
+          out=$(node examples/node/scan.js)
+          echo "$out"
+          echo "$out" | grep -q '"symbol":"BBB"'
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.23"
+      - name: Go
+        shell: bash
+        run: |
+          out=$(cd examples/go && go run .)
+          echo "$out"
+          echo "$out" | grep -q '"symbol":"BBB"'
+
+      - uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+        with:
+          distribution: temurin
+          java-version: "22"
+      - name: Java
+        shell: bash
+        run: |
+          mvn -f bindings/java/pom.xml -q package -DskipTests
+          javac -cp bindings/java/target/classes examples/java/Scan.java -d examples/java/out
+          out=$(java --enable-native-access=ALL-UNNAMED \
+            -Dnative.lib.dir="$PWD/target/release" \
+            -cp "bindings/java/target/classes:examples/java/out" Scan)
+          echo "$out"
+          echo "$out" | grep -q '"symbol":"BBB"'
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: "8.0.x"
+      - name: C#
+        shell: bash
+        run: |
+          out=$(dotnet run --project examples/csharp/Scan)
+          echo "$out"
+          echo "$out" | grep -q '"symbol":"BBB"'
+
+      - uses: r-lib/actions/setup-r@d3c5be51b12e724e68f33216ca3c148b66d5f0b6 # v2.12.1
+        with:
+          use-public-rspm: true
+      - name: R
+        shell: bash
+        env:
+          WKSCREEN_INC: ${{ github.workspace }}/bindings/c/include
+          WKSCREEN_LIB: ${{ github.workspace }}/target/release
+        run: |
+          R CMD INSTALL bindings/r
+          out=$(Rscript examples/r/scan.R)
+          echo "$out"
+          echo "$out" | grep -q '"symbol":"BBB"'
+
   python:
     name: Python ${{ matrix.python-version }} on ${{ matrix.os }}
     strategy:
