@@ -175,7 +175,7 @@ pub(crate) fn evaluate_universe(
 ) -> ScanReport {
     let mut matches: Vec<ScanResult> = Vec::new();
     for (symbol, state) in &universe.symbols {
-        if !eval_condition(&spec.condition, symbol, universe) {
+        if !eval_condition(&spec.condition, symbol, state, universe) {
             continue;
         }
         let mut values = BTreeMap::new();
@@ -377,6 +377,21 @@ fn collect_values(
                         format!("{}#{}", expr.key(), metric_key(*metric)),
                         round_to(*v),
                     );
+                }
+            }
+        }
+        Condition::Between { value, low, high } => {
+            add_expr_value(value, state, out);
+            add_expr_value(low, state, out);
+            add_expr_value(high, state, out);
+        }
+        Condition::Rising { expr, bars } | Condition::Falling { expr, bars } => {
+            add_expr_value(expr, state, out);
+            // The bar it is compared against is half the reason for the match,
+            // so it is named the same way a `prev` expression would be.
+            if let Some(v) = state.expr_at(expr, *bars as usize) {
+                if v.is_finite() {
+                    out.insert(format!("prev({},{bars})", expr.key()), round_to(v));
                 }
             }
         }

@@ -5,14 +5,26 @@
 
 use crate::expr::Expr;
 use crate::spec::{Comparator, Condition};
+use crate::symbol_state::SymbolState;
 use crate::universe::Universe;
 
-/// Evaluate a condition for `sym` against the whole `universe`. Missing values
-/// (a symbol still warming up, or an indicator without an output) make the
-/// condition false. Boolean combinators short-circuit.
-pub(crate) fn eval_condition(cond: &Condition, sym: &str, universe: &Universe) -> bool {
+/// Evaluate a condition for the symbol `sym`, whose folded `state` the caller
+/// already holds, against the whole `universe`.
+///
+/// The state is passed rather than looked up: every caller is iterating the
+/// universe and has it, and a lookup would add a "symbol not found" branch that
+/// nothing can reach.
+///
+/// Missing values (a symbol still warming up, or an indicator without an output)
+/// make the condition false. Boolean combinators short-circuit.
+pub(crate) fn eval_condition(
+    cond: &Condition,
+    sym: &str,
+    state: &SymbolState,
+    universe: &Universe,
+) -> bool {
     match cond {
-        Condition::Cmp { left, op, right } => eval_cmp(left, *op, right, sym, universe),
+        Condition::Cmp { left, op, right } => eval_cmp(left, *op, right, state),
         Condition::CrossSection {
             expr,
             metric,
@@ -31,27 +43,43 @@ pub(crate) fn eval_condition(cond: &Condition, sym: &str, universe: &Universe) -
                     .symbols
                     .iter()
                     .filter(|(_, s)| s.is_ready())
-                    .filter(|(k, _)| eval_condition(inner, k, universe))
+                    .filter(|(k, s)| eval_condition(inner, k, s, universe))
                     .count();
                 hits as f64 / n as f64
             };
             point_compare(ratio_universe, *op, *ratio)
         }
-        Condition::All { conditions } => {
-            conditions.iter().all(|c| eval_condition(c, sym, universe))
-        }
-        Condition::Any { conditions } => {
-            conditions.iter().any(|c| eval_condition(c, sym, universe))
-        }
-        Condition::Not { condition } => !eval_condition(condition, sym, universe),
+        Condition::Between { value, low, high } => match (
+            state.expr_cur(value),
+            state.expr_cur(low),
+            state.expr_cur(high),
+        ) {
+            (Some(v), Some(lo), Some(hi)) => lo <= v && v <= hi,
+            _ => false,
+        },
+        Condition::Rising { expr, bars } => trend(expr, *bars, state, |now, then| now > then),
+        Condition::Falling { expr, bars } => trend(expr, *bars, state, |now, then| now < then),
+        Condition::All { conditions } => conditions
+            .iter()
+            .all(|c| eval_condition(c, sym, state, universe)),
+        Condition::Any { conditions } => conditions
+            .iter()
+            .any(|c| eval_condition(c, sym, state, universe)),
+        Condition::Not { condition } => !eval_condition(condition, sym, state, universe),
+    }
+}
+
+/// Compare an expression against its own value `bars` bars ago. A symbol whose
+/// window does not reach that far has no answer, so the condition is false.
+fn trend(expr: &Expr, bars: u32, state: &SymbolState, holds: fn(f64, f64) -> bool) -> bool {
+    match (state.expr_cur(expr), state.expr_at(expr, bars as usize)) {
+        (Some(now), Some(then)) => holds(now, then),
+        _ => false,
     }
 }
 
 /// Evaluate a comparison between two expressions for one symbol.
-fn eval_cmp(left: &Expr, op: Comparator, right: &Expr, sym: &str, universe: &Universe) -> bool {
-    let Some(state) = universe.symbols.get(sym) else {
-        return false;
-    };
+fn eval_cmp(left: &Expr, op: Comparator, right: &Expr, state: &SymbolState) -> bool {
     match op {
         Comparator::CrossesAbove => {
             match (
@@ -92,6 +120,7 @@ fn point_compare(a: f64, op: Comparator, b: f64) -> bool {
         Comparator::Le => a <= b,
         // Relative tolerance, not bit equality: the golden compares report JSON.
         Comparator::Eq => (a - b).abs() <= 1e-9 * a.abs().max(b.abs()).max(1.0),
+        Comparator::Ne => (a - b).abs() > 1e-9 * a.abs().max(b.abs()).max(1.0),
         Comparator::CrossesAbove | Comparator::CrossesBelow => false,
     }
 }
@@ -152,9 +181,9 @@ mod tests {
             right: Expr::Const { value: 15.0 },
         };
         let u = seeded(cond.clone());
-        assert!(!eval_condition(&cond, "A", &u));
-        assert!(eval_condition(&cond, "B", &u));
-        assert!(eval_condition(&cond, "C", &u));
+        assert!(!eval_condition(&cond, "A", &u.symbols["A"], &u));
+        assert!(eval_condition(&cond, "B", &u.symbols["B"], &u));
+        assert!(eval_condition(&cond, "C", &u.symbols["C"], &u));
     }
 
     #[test]
@@ -166,9 +195,9 @@ mod tests {
             value: 1.0,
         };
         let u = seeded(cond.clone());
-        assert!(!eval_condition(&cond, "A", &u));
-        assert!(!eval_condition(&cond, "B", &u));
-        assert!(eval_condition(&cond, "C", &u)); // highest close = rank 1
+        assert!(!eval_condition(&cond, "A", &u.symbols["A"], &u));
+        assert!(!eval_condition(&cond, "B", &u.symbols["B"], &u));
+        assert!(eval_condition(&cond, "C", &u.symbols["C"], &u)); // highest close = rank 1
     }
 
     #[test]
@@ -186,8 +215,8 @@ mod tests {
         };
         let u = seeded(cond.clone());
         // Passes for every symbol (universe-wide gate), even the failing A.
-        assert!(eval_condition(&cond, "A", &u));
-        assert!(eval_condition(&cond, "C", &u));
+        assert!(eval_condition(&cond, "A", &u.symbols["A"], &u));
+        assert!(eval_condition(&cond, "C", &u.symbols["C"], &u));
     }
 
     #[test]
@@ -206,15 +235,15 @@ mod tests {
             conditions: vec![gt15.clone(), lt25.clone()],
         };
         let u = seeded(all.clone());
-        assert!(!eval_condition(&all, "A", &u)); // 10: fails gt15
-        assert!(eval_condition(&all, "B", &u)); // 20: passes both
-        assert!(!eval_condition(&all, "C", &u)); // 30: fails lt25
+        assert!(!eval_condition(&all, "A", &u.symbols["A"], &u)); // 10: fails gt15
+        assert!(eval_condition(&all, "B", &u.symbols["B"], &u)); // 20: passes both
+        assert!(!eval_condition(&all, "C", &u.symbols["C"], &u)); // 30: fails lt25
 
         let not = Condition::Not {
             condition: Box::new(gt15),
         };
-        assert!(eval_condition(&not, "A", &u));
-        assert!(!eval_condition(&not, "B", &u));
+        assert!(eval_condition(&not, "A", &u.symbols["A"], &u));
+        assert!(!eval_condition(&not, "B", &u.symbols["B"], &u));
     }
 
     #[test]
@@ -228,9 +257,9 @@ mod tests {
         let mut u = Universe::new();
         u.ensure("A", &s).unwrap();
         u.fold("A", &candle(10.0), BarFeeds::default()); // below 15
-        assert!(!eval_condition(&cond, "A", &u)); // no prev cross yet? prev==None first bar
+        assert!(!eval_condition(&cond, "A", &u.symbols["A"], &u)); // no prev cross yet? prev==None first bar
         u.fold("A", &candle(20.0), BarFeeds::default()); // above 15
-        assert!(eval_condition(&cond, "A", &u)); // prev 10<=15, cur 20>15
+        assert!(eval_condition(&cond, "A", &u.symbols["A"], &u)); // prev 10<=15, cur 20>15
     }
 
     #[test]
@@ -244,8 +273,8 @@ mod tests {
         let mut u = Universe::new();
         u.ensure("A", &s).unwrap();
         u.fold("A", &candle(20.0), BarFeeds::default()); // above 15
-        assert!(!eval_condition(&cond, "A", &u));
+        assert!(!eval_condition(&cond, "A", &u.symbols["A"], &u));
         u.fold("A", &candle(10.0), BarFeeds::default()); // below -> crosses below
-        assert!(eval_condition(&cond, "A", &u));
+        assert!(eval_condition(&cond, "A", &u.symbols["A"], &u));
     }
 }

@@ -4,8 +4,9 @@
 // `golden/specs/*.json`, run a scan over the shared `golden/data.json`, and
 // assert the response equals `golden/expected/<spec>.json` byte-for-byte.
 // Because every binding returns the core's compact `command_json` string
-// verbatim, byte equality is the exact cross-language parity check. The fixtures
-// arrive in a later phase; until then this test skips cleanly.
+// verbatim, byte equality is the exact cross-language parity check. The spec
+// directory is globbed rather than listed, so a spec added to the corpus is
+// covered here without touching this file.
 
 const { test } = require("node:test");
 const assert = require("node:assert");

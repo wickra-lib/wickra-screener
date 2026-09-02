@@ -1,8 +1,8 @@
 """Cross-language golden: every binding must produce byte-identical scan JSON.
 
 The fixtures live in the repository-root ``golden/`` directory (specs + a shared
-dataset + expected responses). They are added in a later phase; until then this
-test skips cleanly.
+dataset + expected responses). The spec directory is globbed rather than listed,
+so a spec added to the corpus is covered here without touching this file.
 """
 
 import json

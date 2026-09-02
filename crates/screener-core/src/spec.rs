@@ -23,6 +23,8 @@ pub enum Comparator {
     Le,
     /// `left ~= right` (relative tolerance).
     Eq,
+    /// `left !~= right`: the negation of `Eq`, under the same tolerance.
+    Ne,
     /// `left` crosses above `right` this bar.
     CrossesAbove,
     /// `left` crosses below `right` this bar.
@@ -74,6 +76,29 @@ pub enum Condition {
         op: Comparator,
         /// Threshold ratio in `[0, 1]`.
         ratio: f64,
+    },
+    /// `low <= value <= high`, all three expressions.
+    Between {
+        /// The expression under test.
+        value: Expr,
+        /// Lower bound, inclusive.
+        low: Expr,
+        /// Upper bound, inclusive.
+        high: Expr,
+    },
+    /// The expression is greater than it was `bars` bars ago.
+    Rising {
+        /// The expression under test.
+        expr: Expr,
+        /// How many bars back to compare against.
+        bars: u32,
+    },
+    /// The expression is less than it was `bars` bars ago.
+    Falling {
+        /// The expression under test.
+        expr: Expr,
+        /// How many bars back to compare against.
+        bars: u32,
     },
     /// All sub-conditions must hold.
     All {
@@ -171,7 +196,24 @@ impl ScanSpec {
         if let Some(breadth) = &self.breadth {
             breadth.validate()?;
         }
+        check_lookbacks(&self.condition)?;
         check_breadth_nesting(&self.condition)
+    }
+
+    /// The deepest lookback anywhere in the spec, in bars.
+    ///
+    /// This is what sizes each symbol's bar window: a spec that reads ten bars
+    /// back has to keep ten, and one that reads none keeps only what a crossover
+    /// needs.
+    #[must_use]
+    pub fn lookback(&self) -> usize {
+        let mut deepest = 0;
+        let _ = self.visit_exprs(&mut |expr| {
+            deepest = deepest.max(expr.lookback());
+            Ok(())
+        });
+        condition_lookback(&self.condition, &mut deepest);
+        deepest
     }
 
     /// Whether the spec names an indicator that reads the market cross-section.
@@ -268,7 +310,14 @@ where
             visit(left)?;
             visit(right)
         }
-        Condition::CrossSection { expr, .. } => visit(expr),
+        Condition::CrossSection { expr, .. }
+        | Condition::Rising { expr, .. }
+        | Condition::Falling { expr, .. } => visit(expr),
+        Condition::Between { value, low, high } => {
+            visit(value)?;
+            visit(low)?;
+            visit(high)
+        }
         Condition::Breadth { inner, .. } => visit_exprs(inner, visit),
         Condition::All { conditions } | Condition::Any { conditions } => {
             for c in conditions {
@@ -277,6 +326,50 @@ where
             Ok(())
         }
         Condition::Not { condition } => visit_exprs(condition, visit),
+    }
+}
+
+/// The deepest lookback a condition asks for beyond its expressions: `rising`
+/// and `falling` name a bar count of their own.
+fn condition_lookback(cond: &Condition, deepest: &mut usize) {
+    match cond {
+        Condition::Rising { bars, .. } | Condition::Falling { bars, .. } => {
+            *deepest = (*deepest).max(*bars as usize);
+        }
+        Condition::Breadth { inner, .. } => condition_lookback(inner, deepest),
+        Condition::All { conditions } | Condition::Any { conditions } => {
+            for c in conditions {
+                condition_lookback(c, deepest);
+            }
+        }
+        Condition::Not { condition } => condition_lookback(condition, deepest),
+        Condition::Cmp { .. } | Condition::CrossSection { .. } | Condition::Between { .. } => {}
+    }
+}
+
+/// Reject a lookback of zero bars: `rising` over the same bar it stands on can
+/// never hold, and writing it is a mistake rather than an intent.
+fn check_lookbacks(cond: &Condition) -> Result<()> {
+    match cond {
+        Condition::Rising { bars, .. } | Condition::Falling { bars, .. } => {
+            if *bars == 0 {
+                return Err(Error::BadSpec(
+                    "rising/falling needs a lookback of at least 1 bar".into(),
+                ));
+            }
+            Ok(())
+        }
+        Condition::Breadth { inner, .. } => check_lookbacks(inner),
+        Condition::All { conditions } | Condition::Any { conditions } => {
+            for c in conditions {
+                check_lookbacks(c)?;
+            }
+            Ok(())
+        }
+        Condition::Not { condition } => check_lookbacks(condition),
+        Condition::Cmp { .. } | Condition::CrossSection { .. } | Condition::Between { .. } => {
+            Ok(())
+        }
     }
 }
 
@@ -298,7 +391,11 @@ fn check_breadth_nesting(cond: &Condition) -> Result<()> {
             Ok(())
         }
         Condition::Not { condition } => check_breadth_nesting(condition),
-        Condition::Cmp { .. } | Condition::CrossSection { .. } => Ok(()),
+        Condition::Cmp { .. }
+        | Condition::CrossSection { .. }
+        | Condition::Between { .. }
+        | Condition::Rising { .. }
+        | Condition::Falling { .. } => Ok(()),
     }
 }
 
@@ -310,7 +407,11 @@ fn contains_breadth(cond: &Condition) -> bool {
             conditions.iter().any(contains_breadth)
         }
         Condition::Not { condition } => contains_breadth(condition),
-        Condition::Cmp { .. } | Condition::CrossSection { .. } => false,
+        Condition::Cmp { .. }
+        | Condition::CrossSection { .. }
+        | Condition::Between { .. }
+        | Condition::Rising { .. }
+        | Condition::Falling { .. } => false,
     }
 }
 

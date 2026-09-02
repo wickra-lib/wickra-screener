@@ -15,7 +15,7 @@ verbatim — there is no per-language JSON re-formatting.
 |------|------|
 | `data/sym-01.csv` … `sym-06.csv` | The canonical universe (per-symbol OHLCV). |
 | `data.json` | The same universe as a JSON dataset — the input the bindings feed to a `scan` command. |
-| `specs/*.json` | The five canonical scan specs. |
+| `specs/*.json` | The canonical scan specs. Every binding globs this directory, so adding one here adds it to all ten languages. |
 | `expected/<spec>.json` | The byte-exact `ScanReport` for each spec. |
 
 ## Data formula

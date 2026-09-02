@@ -1,0 +1,26 @@
+{
+  "universe": ["sym-01", "sym-02", "sym-03", "sym-04", "sym-05", "sym-06"],
+  "timeframe": "1h",
+  "condition": {
+    "type": "all",
+    "conditions": [
+      { "type": "cmp",
+        "left": { "kind": "sub", "left": { "kind": "price", "field": "close" }, "right": { "kind": "indicator", "name": "Sma", "params": [20] } },
+        "op": "gt",
+        "right": { "kind": "const", "value": 0 } },
+      { "type": "rising", "expr": { "kind": "price", "field": "hlc3" }, "bars": 5 },
+      { "type": "between",
+        "value": { "kind": "indicator", "name": "Rsi", "params": [14] },
+        "low": { "kind": "const", "value": 30 },
+        "high": { "kind": "const", "value": 90 } },
+      { "type": "cmp",
+        "left": { "kind": "prev", "of": { "kind": "price", "field": "close" }, "bars": 3 },
+        "op": "ne",
+        "right": { "kind": "const", "value": 0 } }
+    ]
+  },
+  "rank": {
+    "by": { "kind": "div", "left": { "kind": "price", "field": "close" }, "right": { "kind": "indicator", "name": "Sma", "params": [20] } },
+    "desc": true
+  }
+}
