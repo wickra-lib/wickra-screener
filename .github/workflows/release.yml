@@ -347,7 +347,8 @@ jobs:
           for dir in bindings/node/npm/*/; do
             cp LICENSE-MIT LICENSE-APACHE "$dir"
           done
-          echo "staged licences:"; ls -1 bindings/node/npm/*/LICENSE-* | sort
+          echo "staged licences:"
+          find bindings/node/npm -name "LICENSE-*" | sort
 
       - name: Publish platform packages (idempotent)
         working-directory: bindings/node
