@@ -1,0 +1,80 @@
+name: CodSpeed
+
+# Performance regressions are the one class of defect nothing here reports.
+# bench.yml runs nightly, uploads a criterion artifact, and prints numbers a
+# person has to go and read -- so a scan that got slower lands, and is noticed
+# weeks later, if at all. This measures every pull request and comments on it.
+#
+# It counts instructions under instrumentation rather than timing wall clock,
+# which is what makes a shared GitHub runner usable: the number does not move
+# because a neighbouring VM got busy. It is also why these figures are not the
+# ones in BENCHMARKS.md -- those are throughput, this is relative change. Both
+# are true; they answer different questions.
+#
+# The workspace `criterion` is an alias for `codspeed-criterion-compat`, which is
+# what lets the same bench source run under instrumentation here and as a normal
+# criterion bench in bench.yml. Without the alias this job runs, reports nothing
+# and passes.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'crates/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - '.github/workflows/codspeed.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'crates/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - '.github/workflows/codspeed.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  benchmarks:
+    name: Instruction counts
+    runs-on: ubuntu-latest
+    timeout-minutes: 30 # backstop: instrumentation is far slower per iteration than a plain run
+    permissions:
+      contents: read
+      # OpenID Connect against CodSpeed, which their action recommends over an
+      # upload token. A public repository needs no token at all.
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Rust toolchain
+        uses: ./.github/actions/setup-rust
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+      - name: Install cargo-codspeed
+        uses: taiki-e/install-action@742a3317eac7bd62f91cd888b4eead5e784ba833 # v2.87.1
+        timeout-minutes: 10 # fail fast on a stuck download instead of hanging the job
+        with:
+          tool: cargo-codspeed
+
+      # screener-bench is the only crate carrying benches, and it is named rather
+      # than --workspace so a bench added elsewhere has to be added here too,
+      # deliberately, instead of silently doubling this job's cost.
+      - name: Build the benchmarks
+        run: cargo codspeed build -p screener-bench
+
+      - name: Run them under instrumentation
+        uses: CodSpeedHQ/action@373d6868929f444bc08d901fd0eb0ad52a8875ea # v5.2.1
+        with:
+          # Required since action v4, and it used to be inferred. `simulation`
+          # counts instructions under instrumentation; `walltime` measures real
+          # time and needs CodSpeed's dedicated runners, which a standard GitHub
+          # runner is not -- there the timing would carry exactly the noise this
+          # job exists to avoid.
+          mode: simulation
+          run: cargo codspeed run -p screener-bench

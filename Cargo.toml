@@ -62,7 +62,7 @@ clap = { version = "4", features = ["derive"] }
 # C ABI header generation.
 cbindgen = "0.27"
 # Test/dev.
-criterion = "0.8"
+criterion = { package = "codspeed-criterion-compat", version = "5.0.1", features = ["html_reports"] }
 proptest = "1"
 
 [workspace.lints.rust]

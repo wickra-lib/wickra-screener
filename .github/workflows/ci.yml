@@ -394,6 +394,44 @@ jobs:
       - run: pip install --no-index --find-links bindings/python/dist wickra-screener
       - run: pytest bindings/python/tests -q
 
+  # The Linux wheels are built inside manylinux and musllinux containers, and
+  # release.yml is the only place that happens -- on a `v*` tag, where a failure
+  # is discovered at the one moment nothing can be taken back. The `python` job
+  # above builds on the runner itself, which is a different libc, a different
+  # toolchain image and a different set of system headers, so it cannot see a
+  # container-only break.
+  #
+  # Unlike the sibling repositories this needs no vendored OpenSSL and no Perl:
+  # the Python binding depends on screener-core without the `live` feature, so
+  # nothing in the wheel links a TLS stack. If that ever changes, this job is
+  # where it will show up first.
+  python-wheel-container-smoke:
+    name: Python wheel (${{ matrix.manylinux }} smoke)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        manylinux: [auto, musllinux_1_2]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Same invocation release.yml uses for its Linux rows, so what is proven
+      # here is what will run there.
+      - uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
+        with:
+          working-directory: bindings/python
+          target: x86_64
+          args: --release --strip --out dist
+          manylinux: ${{ matrix.manylinux }}
+      - name: The container produced a wheel
+        shell: bash
+        run: |
+          set -euo pipefail
+          ls -l bindings/python/dist
+          test "$(find bindings/python/dist -name '*.whl' | wc -l)" -ge 1
+
   node:
     name: Node ${{ matrix.node-version }} on ${{ matrix.os }}
     strategy:
