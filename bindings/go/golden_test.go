@@ -1,7 +1,7 @@
 package wickra
 
 // Cross-language golden parity: build the screener from each committed
-// golden/specs/*.json, run a scan over the shared golden/data.json, and assert
+// golden/specs/*.json, run a scan over the matching committed dataset, and assert
 // the response equals golden/expected/<spec>.json byte-for-byte. The binding
 // returns the core's compact command_json string verbatim, so byte equality is
 // the exact cross-language parity check. The fixtures arrive in a later phase;
@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -34,7 +35,11 @@ func TestGoldenParity(t *testing.T) {
 	if g == "" {
 		t.Skip("golden fixtures not present yet")
 	}
-	dataset, err := os.ReadFile(filepath.Join(g, "data.json"))
+	candlesOnly, err := os.ReadFile(filepath.Join(g, "data.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	fed, err := os.ReadFile(filepath.Join(g, "data-feeds.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,6 +60,10 @@ func TestGoldenParity(t *testing.T) {
 		s, err := New(string(specJSON))
 		if err != nil {
 			t.Fatalf("%s: %v", name, err)
+		}
+		dataset := candlesOnly
+		if strings.HasPrefix(name, "feeds_") {
+			dataset = fed
 		}
 		cmd, err := json.Marshal(map[string]any{"cmd": "scan", "data": json.RawMessage(dataset)})
 		if err != nil {

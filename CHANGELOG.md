@@ -70,6 +70,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PriceField` gains `hlc3` and `ohlc4`.
 - The `ne` comparator, and the `between`, `rising` and `falling` conditions,
   completing the set `wickra_backtest_core::spec::Condition` already had.
+- Six golden specs covering the side feeds — `feeds_pairwise`,
+  `feeds_derivatives`, `feeds_orderbook`, `feeds_trades`, `feeds_breadth` and
+  `derived_breadth` — over a second committed universe, `data-feeds.json`, which
+  carries the same candles plus a reference series, derivatives ticks, order
+  books, trades and market panels. A spec named `feeds_*` scans it; every other
+  spec scans the candle-only `data.json`. Two invariants guard the corpus beyond
+  byte equality: every match in a fed report carries a finite value for each
+  indicator its spec names, and a candle-only spec produces the identical report
+  against both datasets.
 - A `compound` golden spec exercising every new form. Every binding globs the
   spec directory, so it is covered in all ten languages without a per-binding
   change.

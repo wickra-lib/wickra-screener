@@ -1,8 +1,10 @@
 """Cross-language golden: every binding must produce byte-identical scan JSON.
 
-The fixtures live in the repository-root ``golden/`` directory (specs + a shared
-dataset + expected responses). The spec directory is globbed rather than listed,
-so a spec added to the corpus is covered here without touching this file.
+The fixtures live in the repository-root ``golden/`` directory (specs + shared
+datasets + expected responses). The spec directory is globbed rather than listed,
+so a spec added to the corpus is covered here without touching this file. A spec
+named ``feeds_*`` scans ``data-feeds.json``, which carries the side feeds; every
+other spec scans the candle-only ``data.json``.
 """
 
 import json
@@ -26,7 +28,8 @@ def _spec_files() -> list[pathlib.Path]:
 @pytest.mark.skipif(not GOLDEN.exists(), reason="golden fixtures not present yet")
 @pytest.mark.parametrize("spec_path", _spec_files())
 def test_golden_scan_is_byte_identical(spec_path: pathlib.Path) -> None:
-    dataset = json.loads((GOLDEN / "data.json").read_text(encoding="utf-8"))
+    name = "data-feeds.json" if spec_path.stem.startswith("feeds_") else "data.json"
+    dataset = json.loads((GOLDEN / name).read_text(encoding="utf-8"))
     expected = (GOLDEN / "expected" / f"{spec_path.stem}.json").read_text(
         encoding="utf-8"
     )
