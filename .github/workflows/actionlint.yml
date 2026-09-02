@@ -27,9 +27,14 @@ jobs:
         with:
           persist-credentials: false
 
+      # Installed the way every other tool here is (cargo-deny, cargo-fuzz,
+      # osv-scanner), rather than as a container: one SHA-pinned action, no image
+      # pull, and the same pinning rule as the rest of the workflows.
+      - uses: taiki-e/install-action@3d7d7cd5ac7f994c1892ae0c06165095b9139094 # v2.85.1
+        with:
+          tool: actionlint
+
       # actionlint shells out to shellcheck for `run:` blocks when it is
       # present; the ubuntu runner ships it, so this needs no install step.
       - name: Run actionlint
-        uses: docker://rhysd/actionlint@sha256:887a259a5a534f3c4f36cb02dca341673c6089431057242cdc931e9f133147e9 # v1.7.7
-        with:
-          args: -color
+        run: actionlint -color

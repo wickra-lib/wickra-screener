@@ -1,10 +1,13 @@
-// A minimal C++ example: run a scan through the wickra-screener C ABI.
-#include <cstddef>
+// A minimal C++ example: run a scan through the wickra-screener C++ wrapper.
+//
+// The wrapper is header-only over the same C ABI the C example uses; what it
+// removes is the handle bookkeeping and the two-call length protocol, which are
+// the parts that are easy to get subtly wrong.
+#include <exception>
 #include <iostream>
 #include <string>
-#include <vector>
 
-#include "wickra_screener.h"
+#include "wickra_screener.hpp"
 
 namespace {
 const char *SPEC =
@@ -19,25 +22,21 @@ const char *CMD =
 }  // namespace
 
 int main() {
-    WickraScreener *screener = wickra_screener_new(SPEC);
-    if (screener == nullptr) {
-        std::cerr << "failed to build screener\n";
+    try {
+        wickra::Screener screener(SPEC);
+        const std::string report = screener.command(CMD);
+
+        std::cout << "wickra-screener " << wickra::Screener::version() << "\n";
+        std::cout << "scan: " << report << "\n";
+
+        // BBB closes at 15 and AAA at 5, so exactly one symbol matches.
+        if (report.find("\"symbol\":\"BBB\"") == std::string::npos) {
+            std::cerr << "expected BBB in the report\n";
+            return 1;
+        }
+    } catch (const std::exception &e) {
+        std::cerr << "failed: " << e.what() << "\n";
         return 1;
     }
-
-    int len = wickra_screener_command(screener, CMD, nullptr, 0);
-    if (len < 0) {
-        std::cerr << "command failed: code " << len << "\n";
-        wickra_screener_free(screener);
-        return 1;
-    }
-    std::vector<char> buf(static_cast<std::size_t>(len) + 1);
-    wickra_screener_command(screener, CMD, buf.data(),
-                            static_cast<std::size_t>(buf.size()));
-
-    std::cout << "wickra-screener " << wickra_screener_version() << "\n";
-    std::cout << "scan: " << std::string(buf.data()) << "\n";
-
-    wickra_screener_free(screener);
     return 0;
 }

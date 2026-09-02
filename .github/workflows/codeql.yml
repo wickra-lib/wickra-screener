@@ -3,9 +3,10 @@ name: CodeQL
 # Static analysis security testing. Analyses the Rust core and every binding
 # surface CodeQL supports. Results appear under Security → Code scanning.
 #
-# `build-mode: none` analyses source directly. C# and Java are compiled
-# languages, and `none` is supported for both, so neither needs a toolchain here
-# — the `csharp` and `java` CI jobs already build them for real.
+# `build-mode: none` analyses source directly, which is right for Rust, Python
+# and JavaScript. C# and Java are compiled: without a build no call resolves, and
+# GitHub marks such an analysis as lower quality. Both use `autobuild`, which
+# runs the project's own build and gives the queries a real call graph.
 #
 # .github/codeql-config.yml keeps generated and vendored files out of the
 # analysis; without it each new binding arrives as a batch of findings about code
@@ -29,6 +30,7 @@ jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     permissions:
       security-events: write # upload CodeQL results to code-scanning
       packages: read
@@ -45,9 +47,9 @@ jobs:
           - language: javascript-typescript
             build-mode: none
           - language: csharp
-            build-mode: none
+            build-mode: autobuild
           - language: java-kotlin
-            build-mode: none
+            build-mode: autobuild
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -59,7 +61,7 @@ jobs:
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
-          config-file: ./.github/codeql-config.yml
+          config-file: ./.github/codeql/codeql-config.yml
 
       - name: Perform CodeQL analysis
         uses: github/codeql-action/analyze@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4.37.3

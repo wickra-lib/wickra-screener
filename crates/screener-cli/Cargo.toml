@@ -12,6 +12,13 @@ readme.workspace = true
 keywords.workspace = true
 categories.workspace = true
 
+[package.metadata.docs.rs]
+# Document every feature, including `live`, so the exchange-sourced universe is
+# not missing from the reference. docs.rs builds on nightly and sets the
+# `docsrs` cfg, which is what makes the feature badges appear.
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
 [lints]
 workspace = true
 
