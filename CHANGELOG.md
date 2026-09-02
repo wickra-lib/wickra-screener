@@ -109,6 +109,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A side feed that is not exactly as long as the candle array is refused, and a
   malformed book, tick, trade or cross-section is reported rather than dropped.
 
+- The `live` feature is implemented. `LiveUniverse::connect(venue, interval,
+  bars, options)` opens a public market-data connection to one of the ten venues
+  the exchange facade supports, and `fetch(symbols)` pulls each symbol's recent
+  candles into the same dataset `scan_batch` takes — so a live scan and a scan
+  over committed CSVs run through identical code. The CLI grows `--live <venue>`
+  alongside `--data` and `--stdin`, with `--interval` and `--bars`.
+  Read-only throughout: no key is sent, no order is placed, and only candles are
+  available, so a spec naming an order-book, trade-flow or derivatives indicator
+  is refused against a live universe by the same feed check that refuses it
+  against a file.
+
 ### Changed
 
 - `wickra-backtest-core` is consumed from crates.io (0.1.2) instead of git. It
@@ -118,5 +129,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `wickra-core` and `wickra-data` move from `0.9` to `1.0`, the major
   `wickra-backtest-core` 0.1.2 resolves, so a default build links one copy of the
   indicator types rather than two incompatible ones.
+- The `wickra-exchange` git dependency is pinned to a revision, so a build is
+  reproducible rather than resolving to whatever the default branch is at the
+  time.
 
 [Unreleased]: https://github.com/wickra-lib/wickra-screener/commits/main

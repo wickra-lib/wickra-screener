@@ -6,7 +6,16 @@ use std::path::PathBuf;
 /// Run a screener scan over a spec and a universe of candles.
 #[derive(Parser, Debug)]
 #[command(name = "wickra-screener", version, about)]
-#[command(group(ArgGroup::new("source").required(true).args(["data", "stdin"])))]
+// The group has to name exactly the arguments that exist, and `--live` only
+// exists with the feature that can serve it.
+#[cfg_attr(
+    feature = "live",
+    command(group(ArgGroup::new("source").required(true).args(["data", "stdin", "live"])))
+)]
+#[cfg_attr(
+    not(feature = "live"),
+    command(group(ArgGroup::new("source").required(true).args(["data", "stdin"])))
+)]
 pub struct Args {
     /// Path to the scan spec (JSON or TOML, chosen by file extension).
     #[arg(long)]
@@ -19,6 +28,25 @@ pub struct Args {
     /// Read the universe as a JSON dataset from standard input instead.
     #[arg(long)]
     pub stdin: bool,
+
+    /// Pull the spec's universe from an exchange instead (`binance`, `bybit`,
+    /// `okx`, `bitget`, `kucoin`, `gateio`, `htx`, `kraken`, `coinbase`,
+    /// `upbit`). Public market data only: no key is sent and no order is placed.
+    #[cfg(feature = "live")]
+    #[arg(long)]
+    pub live: Option<String>,
+
+    /// Kline interval for `--live`.
+    #[cfg(feature = "live")]
+    #[arg(long, default_value = "1h")]
+    pub interval: String,
+
+    /// How many bars to pull per symbol for `--live`. Has to cover the longest
+    /// warmup the spec needs, or every symbol is still warming up when the scan
+    /// evaluates.
+    #[cfg(feature = "live")]
+    #[arg(long, default_value_t = 500)]
+    pub bars: u32,
 
     /// Output format.
     #[arg(long, value_enum, default_value_t = Format::Text)]

@@ -21,6 +21,8 @@ mod eval;
 mod expr;
 mod feeds;
 mod indicator_set;
+#[cfg(feature = "live")]
+mod live;
 mod scan;
 mod screener;
 mod spec;
@@ -32,9 +34,15 @@ pub use config::Config;
 pub use error::{Error, Result};
 pub use expr::{Expr, PriceField};
 pub use feeds::{FeedKind, SymbolInput, SymbolSeries};
+// The exchange options a live pull is configured with, re-exported so a caller
+// does not have to depend on the facade to name them.
+#[cfg(feature = "live")]
+pub use live::LiveUniverse;
 pub use scan::{scan_batch, ScanReport, ScanResult};
 pub use screener::Screener;
 pub use spec::{Comparator, Condition, CsMetric, RankSpec, ScanSpec};
+#[cfg(feature = "live")]
+pub use wickra_exchange::ExchangeOptions;
 
 // The candle type consumers feed and scan with (the backtester's OHLCV bar,
 // which the registry indicators are driven by).

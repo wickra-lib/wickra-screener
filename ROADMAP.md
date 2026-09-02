@@ -30,8 +30,19 @@ CI-green pull requests. Status below is updated as phases complete.
 ## Beyond 1.0
 
 - Richer condition kinds and cross-section reductions as the corpus grows.
-- A live cross-section over an exchange-sourced universe (the optional `live`
-  feature), still read-only.
+- A buffered streaming step, so a streaming screener can assemble the market
+  cross-section the way a batch scan does. Today it sees one symbol's bar at a
+  time and cannot know which other symbols will print at that timestamp, so a
+  breadth spec fed through `feed` needs an explicit `sections` feed.
+
+## Publication
+
+The crate is not on crates.io yet, and cannot be until `wickra-exchange`
+publishes its first release: the optional `live` feature depends on it from git,
+and cargo refuses a git dependency in a published package whether or not the
+feature is on. `wickra-terminal` is in the same position for the same reason.
+Everything else — the Python, Node, WASM and C ABI artefacts — has no such
+constraint.
 
 ## Non-goals
 

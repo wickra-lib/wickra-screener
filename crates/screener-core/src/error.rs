@@ -32,6 +32,9 @@ pub enum Error {
     /// put values into a scan that the screen never asked for.
     #[error("symbol {0} is not in the spec's universe")]
     NotInUniverse(String),
+    /// A live universe could not be sourced from the exchange facade.
+    #[error("live: {0}")]
+    Live(String),
     /// A side feed entry could not be converted to the type indicators consume.
     #[error("feed: {0}")]
     Feed(String),
