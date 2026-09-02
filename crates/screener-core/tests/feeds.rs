@@ -374,3 +374,180 @@ fn every_pairwise_name_behaves_like_one() {
         );
     }
 }
+
+// --- the streaming path -----------------------------------------------------
+
+/// A streaming caller reaches the same indicators through `feed_step`, and the
+/// result agrees with the batch scan over the same bars.
+#[test]
+fn streaming_with_feeds_equals_the_batch_scan() {
+    use screener_core::{Screener, StepFeeds};
+
+    let spec = spec_for("Microprice", vec![]);
+    let spec_json = serde_json::to_string(&spec).expect("serialize spec");
+    let mut screener = Screener::new(&spec_json).expect("valid spec");
+
+    let candles = candles();
+    let books = books();
+    for (candle, book) in candles.iter().zip(&books) {
+        let feeds = StepFeeds {
+            orderbook: Some(book.clone()),
+            ..StepFeeds::default()
+        };
+        screener
+            .feed_step(SYMBOL, candle, feeds)
+            .expect("feeding a book the spec asks for");
+    }
+    let streamed = screener.evaluate();
+
+    let batched = scan_batch(dataset(with(|s| s.books = Some(books.clone()))), &spec)
+        .expect("batch scan with books");
+    assert_eq!(streamed, batched);
+    assert_eq!(streamed.matches.len(), 1);
+}
+
+/// The same feeds travel through the JSON command boundary every binding uses.
+#[test]
+fn the_command_boundary_carries_the_feeds() {
+    use screener_core::Screener;
+
+    let spec = spec_for("Microprice", vec![]);
+    let spec_json = serde_json::to_string(&spec).expect("serialize spec");
+    let mut screener = Screener::new(&spec_json).expect("valid spec");
+
+    for (candle, book) in candles().iter().zip(&books()) {
+        let cmd = serde_json::json!({
+            "cmd": "feed",
+            "symbol": SYMBOL,
+            "candle": candle,
+            "feeds": { "orderbook": book },
+        })
+        .to_string();
+        assert_eq!(
+            screener.command_json(&cmd).expect("command"),
+            r#"{"ok":true}"#
+        );
+    }
+    let report = screener
+        .command_json(r#"{"cmd":"evaluate"}"#)
+        .expect("evaluate");
+    assert!(report.contains(r#""symbol":"AAA""#), "{report}");
+}
+
+/// A streaming bar that omits a feed the spec needs is refused in band, the same
+/// way the batch scan refuses the dataset.
+#[test]
+fn a_streaming_bar_without_the_feed_is_refused() {
+    use screener_core::Screener;
+
+    let spec = spec_for("Microprice", vec![]);
+    let spec_json = serde_json::to_string(&spec).expect("serialize spec");
+    let mut screener = Screener::new(&spec_json).expect("valid spec");
+
+    let candle = candles()[0];
+    let err = screener
+        .feed_step(SYMBOL, &candle, screener_core::StepFeeds::default())
+        .expect_err("a bar without the book must be refused");
+    assert!(
+        matches!(&err, Error::MissingFeed { feed, .. } if feed == "books"),
+        "got {err}"
+    );
+
+    // Through the command boundary the same refusal comes back in band.
+    let cmd = serde_json::json!({ "cmd": "feed", "symbol": SYMBOL, "candle": candle }).to_string();
+    let out = screener
+        .command_json(&cmd)
+        .expect("command_json never errors");
+    assert!(out.contains(r#""ok":false"#), "{out}");
+    assert!(out.contains("books"), "{out}");
+}
+
+// --- malformed feeds --------------------------------------------------------
+
+/// A crossed book fails its invariants; the scan says so instead of dropping it.
+#[test]
+fn a_malformed_order_book_is_reported() {
+    use screener_core::Level;
+
+    let spec = spec_for("Microprice", vec![]);
+    let mut crossed = books();
+    // Best bid above best ask: an uncrossed book is the invariant being broken.
+    crossed[0] = OrderBook {
+        bids: vec![Level {
+            price: 200.0,
+            size: 1.0,
+        }],
+        asks: vec![Level {
+            price: 100.0,
+            size: 1.0,
+        }],
+    };
+    let err = scan_batch(dataset(with(|s| s.books = Some(crossed.clone()))), &spec)
+        .expect_err("a crossed book must be reported");
+    assert!(matches!(err, Error::Feed(_)), "got {err}");
+    assert!(err.to_string().contains(SYMBOL), "{err}");
+}
+
+/// The same holds on the streaming path.
+#[test]
+fn a_malformed_streaming_feed_is_reported() {
+    use screener_core::{Level, Screener, StepFeeds};
+
+    let spec = spec_for("Microprice", vec![]);
+    let spec_json = serde_json::to_string(&spec).expect("serialize spec");
+    let mut screener = Screener::new(&spec_json).expect("valid spec");
+
+    let feeds = StepFeeds {
+        // An empty book has no best bid or ask to price anything against.
+        orderbook: Some(OrderBook {
+            bids: Vec::new(),
+            asks: vec![Level {
+                price: 100.0,
+                size: 1.0,
+            }],
+        }),
+        ..StepFeeds::default()
+    };
+    let err = screener
+        .feed_step(SYMBOL, &candles()[0], feeds)
+        .expect_err("an empty book must be reported");
+    assert!(matches!(err, Error::Feed(_)), "got {err}");
+}
+
+// --- what a spec asks for ---------------------------------------------------
+
+/// `required_feeds` tells a caller what to assemble before it assembles it.
+#[test]
+fn required_feeds_lists_what_a_spec_needs() {
+    use screener_core::FeedKind;
+
+    assert!(spec_for("Rsi", vec![14.0]).required_feeds().is_empty());
+    assert_eq!(
+        spec_for("Microprice", vec![]).required_feeds(),
+        vec![FeedKind::OrderBook]
+    );
+    assert_eq!(
+        spec_for("EffectiveSpread", vec![]).required_feeds(),
+        vec![FeedKind::TradeQuote]
+    );
+
+    // Several families in one spec, each reported once.
+    let spec = ScanSpec {
+        universe: vec![SYMBOL.to_string()],
+        timeframe: None,
+        condition: Condition::All {
+            conditions: vec![
+                spec_for("Microprice", vec![]).condition,
+                spec_for("Microprice", vec![]).condition,
+                spec_for("FundingRate", vec![]).condition,
+                spec_for("Rsi", vec![14.0]).condition,
+            ],
+        },
+        rank: None,
+        limit: None,
+    };
+    assert_eq!(
+        spec.required_feeds(),
+        vec![FeedKind::OrderBook, FeedKind::Derivatives]
+    );
+}

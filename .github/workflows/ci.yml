@@ -161,6 +161,9 @@ jobs:
       - name: Fuzz symbol_fold (30 s)
         run: cargo +nightly fuzz run --target x86_64-unknown-linux-gnu symbol_fold -- -max_total_time=30
         working-directory: fuzz
+      - name: Fuzz feed_payload (30 s)
+        run: cargo +nightly fuzz run --target x86_64-unknown-linux-gnu feed_payload -- -max_total_time=30
+        working-directory: fuzz
 
   python:
     name: Python ${{ matrix.python-version }} on ${{ matrix.os }}

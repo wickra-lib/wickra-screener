@@ -42,6 +42,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `screener_core::feed_kind` reports which feed an indicator consumes, and
   `ScanSpec::required_feeds` reports what a spec needs before a dataset is
   assembled.
+- A `feed_payload` fuzz target over the streaming command envelope, covering the
+  feed conversions an attacker-controlled document reaches.
 
 ### Fixed
 

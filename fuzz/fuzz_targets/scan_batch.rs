@@ -1,17 +1,19 @@
 #![no_main]
 //! Fuzz the full batch scan: a `{spec, data}` object is parsed and scanned. Both
-//! the spec and the universe are attacker-controlled; the scan must never panic.
+//! the spec and the universe are attacker-controlled, and each symbol may be a
+//! bare candle array or a series carrying arbitrary side feeds; the scan must
+//! never panic, whichever form arrives.
 
 use std::collections::BTreeMap;
 
 use libfuzzer_sys::fuzz_target;
-use screener_core::{scan_batch, Candle, ScanSpec};
+use screener_core::{scan_batch, ScanSpec, SymbolInput};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
 struct Input {
     spec: ScanSpec,
-    data: BTreeMap<String, Vec<Candle>>,
+    data: BTreeMap<String, SymbolInput>,
 }
 
 fuzz_target!(|data: &[u8]| {
@@ -22,9 +24,9 @@ fuzz_target!(|data: &[u8]| {
         return;
     };
     // Bound the total work so the fuzzer cannot request an unbounded scan.
-    let bars: usize = input.data.values().map(Vec::len).sum();
+    let bars: usize = input.data.values().map(|s| s.candles().len()).sum();
     if bars > 5000 {
         return;
     }
-    let _ = scan_batch(&input.data, &input.spec);
+    let _ = scan_batch(input.data, &input.spec);
 });
