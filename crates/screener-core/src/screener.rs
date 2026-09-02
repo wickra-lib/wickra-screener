@@ -66,6 +66,9 @@ impl Screener {
         candle: &Candle,
         feeds: BarFeeds<'_>,
     ) -> Result<()> {
+        if !self.spec.universe_set().contains(symbol) {
+            return Err(Error::NotInUniverse(symbol.to_string()));
+        }
         self.spec.check_feeds(feeds.available())?;
         self.universe.ensure(symbol, &self.spec)?;
         self.universe.fold(symbol, candle, feeds);
@@ -73,8 +76,20 @@ impl Screener {
     }
 
     /// Evaluate the current streaming universe.
+    ///
+    /// Symbols the spec names that have not been fed are reported as missing,
+    /// so a report distinguishes "this symbol did not match" from "this symbol
+    /// never arrived".
     pub fn evaluate(&self) -> ScanReport {
-        evaluate_universe(&self.universe, &self.spec, self.universe.symbols.len())
+        let missing = self
+            .spec
+            .missing_from(self.universe.symbols.keys().map(String::as_str));
+        evaluate_universe(
+            &self.universe,
+            &self.spec,
+            self.universe.symbols.len(),
+            missing,
+        )
     }
 
     /// Clear the streaming universe, keeping the spec.

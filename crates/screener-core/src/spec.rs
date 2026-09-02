@@ -6,6 +6,7 @@ use crate::expr::Expr;
 use crate::feeds::{Available, FeedKind};
 use crate::indicator_set::feed_kind;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeSet;
 
 /// How two scalar values are compared.
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
@@ -144,6 +145,29 @@ impl ScanSpec {
             return Err(Error::BadSpec("limit must be greater than 0".into()));
         }
         check_breadth_nesting(&self.condition)
+    }
+
+    /// The universe as a set, for membership tests during a scan.
+    ///
+    /// The field is a `Vec` because a spec is a document and order is what a
+    /// reader wrote; the set is what a scan asks questions of.
+    #[must_use]
+    pub fn universe_set(&self) -> BTreeSet<&str> {
+        self.universe.iter().map(String::as_str).collect()
+    }
+
+    /// The universe symbols that `present` does not cover, in universe order and
+    /// without repeats.
+    #[must_use]
+    pub fn missing_from<'a>(&self, present: impl Iterator<Item = &'a str>) -> Vec<String> {
+        let present: BTreeSet<&str> = present.collect();
+        let mut seen = BTreeSet::new();
+        self.universe
+            .iter()
+            .filter(|s| !present.contains(s.as_str()))
+            .filter(|s| seen.insert(s.as_str()))
+            .cloned()
+            .collect()
     }
 
     /// Visit every expression the spec references — the whole condition tree plus

@@ -17,7 +17,7 @@ WASM unchanged. This page is the reference for its shape.
 
 | Field | Required | Meaning |
 |-------|----------|---------|
-| `universe` | yes | the symbols to scan (non-empty) |
+| `universe` | yes | the symbols to scan (non-empty). A scan folds exactly these: data for a symbol outside the universe is ignored, and a universe symbol no data arrived for is named in the report's `missing`. Feeding an unnamed symbol to a streaming screener is refused. |
 | `condition` | yes | the condition tree evaluated at the last bar |
 | `rank` | no | order matches by an expression; `desc` picks direction |
 | `limit` | no | keep at most N matches after ranking (positive) |
