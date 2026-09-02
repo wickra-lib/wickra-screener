@@ -9,7 +9,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use proptest::prelude::*;
 use screener_core::{
     scan_batch, Candle, Comparator, Condition, CsMetric, Expr, PriceField, RankSpec, ScanSpec,
-    Screener,
+    Screener, SymbolInput,
 };
 
 fn arb_comparator() -> impl Strategy<Value = Comparator> {
@@ -98,7 +98,7 @@ fn arb_condition() -> impl Strategy<Value = Condition> {
     })
 }
 
-fn arb_dataset() -> impl Strategy<Value = BTreeMap<String, Vec<Candle>>> {
+fn arb_dataset() -> impl Strategy<Value = BTreeMap<String, SymbolInput>> {
     (2usize..6, 20usize..50).prop_flat_map(|(symbols, bars)| {
         prop::collection::vec(prop::collection::vec(1.0f64..1000.0, bars), symbols).prop_map(
             |per_symbol| {
@@ -115,8 +115,8 @@ fn arb_dataset() -> impl Strategy<Value = BTreeMap<String, Vec<Candle>>> {
                             close,
                             volume: 1000.0,
                         })
-                        .collect();
-                    data.insert(format!("s{s}"), candles);
+                        .collect::<Vec<Candle>>();
+                    data.insert(format!("s{s}"), candles.into());
                 }
                 data
             },
@@ -153,7 +153,7 @@ proptest! {
         })
     ) {
         // A structurally-invalid spec is a well-formed error, not a panic; skip it.
-        let Ok(report) = scan_batch(&data, &spec) else { return Ok(()); };
+        let Ok(report) = scan_batch(data.clone(), &spec) else { return Ok(()); };
 
         prop_assert_eq!(report.scanned, data.len());
 
@@ -172,7 +172,7 @@ proptest! {
         let spec_json = serde_json::to_string(&spec).unwrap();
         if let Ok(mut screener) = Screener::new(&spec_json) {
             for (symbol, candles) in &data {
-                for candle in candles {
+                for candle in candles.candles() {
                     screener.feed(symbol, candle).unwrap();
                 }
             }

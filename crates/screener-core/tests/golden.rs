@@ -13,7 +13,7 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use screener_core::{scan_batch, Candle, ScanSpec};
+use screener_core::{scan_batch, ScanSpec, SymbolInput};
 
 const SPECS: [&str; 5] = [
     "momentum",
@@ -29,17 +29,17 @@ fn golden_dir() -> PathBuf {
 }
 
 /// The universe loaded from `golden/data.json` (the same f64 values as the CSVs).
-fn dataset() -> BTreeMap<String, Vec<Candle>> {
+fn dataset() -> BTreeMap<String, SymbolInput> {
     let json = fs::read_to_string(golden_dir().join("data.json")).expect("read data.json");
     serde_json::from_str(&json).expect("parse data.json")
 }
 
 /// The scan report for a spec, serialized exactly as `command_json` returns it.
-fn report_json(data: &BTreeMap<String, Vec<Candle>>, name: &str) -> String {
+fn report_json(data: &BTreeMap<String, SymbolInput>, name: &str) -> String {
     let spec_json = fs::read_to_string(golden_dir().join("specs").join(format!("{name}.json")))
         .expect("read spec");
     let spec: ScanSpec = serde_json::from_str(&spec_json).expect("parse spec");
-    let report = scan_batch(data, &spec).expect("scan");
+    let report = scan_batch(data.clone(), &spec).expect("scan");
     serde_json::to_string(&report).expect("serialize report")
 }
 

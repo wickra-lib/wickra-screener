@@ -6,6 +6,7 @@ use std::collections::BTreeMap;
 
 use screener_core::{
     scan_batch, Candle, Comparator, Condition, CsMetric, Expr, PriceField, RankSpec, ScanSpec,
+    SymbolInput,
 };
 
 /// Serialize, deserialize, and assert the value survives unchanged.
@@ -215,9 +216,9 @@ fn candles(n: usize) -> Vec<Candle> {
         .collect()
 }
 
-fn data() -> BTreeMap<String, Vec<Candle>> {
+fn data() -> BTreeMap<String, SymbolInput> {
     let mut m = BTreeMap::new();
-    m.insert("AAA".to_string(), candles(40));
+    m.insert("AAA".to_string(), candles(40).into());
     m
 }
 
@@ -229,7 +230,7 @@ fn unknown_indicator_is_an_error() {
         "op":"gt","right":{"kind":"const","value":0}}}"#,
     )
     .unwrap();
-    assert!(scan_batch(&data(), &spec).is_err());
+    assert!(scan_batch(data(), &spec).is_err());
 }
 
 #[test]
@@ -242,7 +243,7 @@ fn unknown_field_yields_no_value_not_an_error() {
         "op":"gt","right":{"kind":"const","value":0}}}"#,
     )
     .unwrap();
-    let report = scan_batch(&data(), &spec).expect("scan succeeds");
+    let report = scan_batch(data(), &spec).expect("scan succeeds");
     assert_eq!(report.scanned, 1);
     assert!(report.matches.is_empty());
 }

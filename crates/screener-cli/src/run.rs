@@ -1,7 +1,7 @@
 //! Load the spec and universe, run the scan, and render the report.
 
 use crate::args::{Args, Format};
-use screener_core::{scan_batch, Candle, Config, ScanReport, ScanSpec};
+use screener_core::{scan_batch, Candle, Config, ScanReport, ScanSpec, SymbolInput};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
 use std::fs;
@@ -23,7 +23,7 @@ pub fn run(args: &Args) -> Result<String, String> {
         return Err("no data source (pass --data or --stdin)".to_string());
     };
 
-    let report = scan_batch(&data, &spec).map_err(|e| e.to_string())?;
+    let report = scan_batch(data, &spec).map_err(|e| e.to_string())?;
 
     Ok(match args.format {
         Format::Json => {
@@ -52,7 +52,7 @@ fn load_spec(path: &Path) -> Result<ScanSpec, String> {
 }
 
 /// Load a universe from a directory of `<SYMBOL>.csv` files.
-fn load_data_dir(dir: &Path) -> Result<BTreeMap<String, Vec<Candle>>, String> {
+fn load_data_dir(dir: &Path) -> Result<BTreeMap<String, SymbolInput>, String> {
     let mut data = BTreeMap::new();
     let entries = fs::read_dir(dir).map_err(|e| format!("read dir {}: {e}", dir.display()))?;
     for entry in entries {
@@ -67,13 +67,19 @@ fn load_data_dir(dir: &Path) -> Result<BTreeMap<String, Vec<Candle>>, String> {
             .to_string();
         let content =
             fs::read_to_string(&path).map_err(|e| format!("read {}: {e}", path.display()))?;
-        data.insert(symbol, parse_csv(&content)?);
+        data.insert(symbol, parse_csv(&content)?.into());
     }
     Ok(data)
 }
 
-/// Load a universe as a JSON dataset (`{"SYMBOL": [candle, ...]}`) from stdin.
-fn load_stdin() -> Result<BTreeMap<String, Vec<Candle>>, String> {
+/// Load a universe as a JSON dataset from stdin.
+///
+/// Each symbol is either a bare candle array (`{"SYMBOL": [candle, ...]}`) or a
+/// series carrying that symbol's side feeds
+/// (`{"SYMBOL": {"candles": [...], "books": [...]}}`), which is how a scan over
+/// the order-book, derivatives, trade-flow or breadth families is supplied — a
+/// CSV directory can only carry candles.
+fn load_stdin() -> Result<BTreeMap<String, SymbolInput>, String> {
     let mut buf = String::new();
     std::io::stdin()
         .read_to_string(&mut buf)

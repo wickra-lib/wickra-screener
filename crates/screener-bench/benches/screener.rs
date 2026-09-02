@@ -6,14 +6,14 @@
 use std::collections::BTreeMap;
 use std::hint::black_box;
 
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use screener_core::{scan_batch, Candle, Condition, Expr, ScanSpec};
+use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion, Throughput};
+use screener_core::{scan_batch, Candle, Condition, Expr, ScanSpec, SymbolInput};
 
 const BARS: usize = 60;
 const INDICATORS: [&str; 4] = ["Sma", "Ema", "Rsi", "Roc"];
 
 /// A synthetic universe of `symbols` symbols, each a deterministic sine path.
-fn universe(symbols: usize) -> BTreeMap<String, Vec<Candle>> {
+fn universe(symbols: usize) -> BTreeMap<String, SymbolInput> {
     let mut data = BTreeMap::new();
     for s in 0..symbols {
         let phase = f64::from(u32::try_from(s % 360).unwrap());
@@ -30,8 +30,8 @@ fn universe(symbols: usize) -> BTreeMap<String, Vec<Candle>> {
                     volume: 1000.0,
                 }
             })
-            .collect();
-        data.insert(format!("s{s:05}"), candles);
+            .collect::<Vec<Candle>>();
+        data.insert(format!("s{s:05}"), candles.into());
     }
     data
 }
@@ -39,7 +39,7 @@ fn universe(symbols: usize) -> BTreeMap<String, Vec<Candle>> {
 /// A spec whose condition references `count` distinct indicators (so the fold
 /// touches `count` indicators per bar). The threshold is permissive so the scan
 /// exercises matching + serialization too.
-fn spec(universe: &BTreeMap<String, Vec<Candle>>, count: usize) -> ScanSpec {
+fn spec(universe: &BTreeMap<String, SymbolInput>, count: usize) -> ScanSpec {
     let conditions = (0..count)
         .map(|i| {
             let name = INDICATORS[i % INDICATORS.len()];
@@ -76,7 +76,14 @@ fn bench_scan(c: &mut Criterion) {
                 BenchmarkId::from_parameter(format!("{symbols}sym_{indicators}ind")),
                 &(&data, &spec),
                 |b, (data, spec)| {
-                    b.iter(|| black_box(scan_batch(black_box(data), black_box(spec)).unwrap()));
+                    // A scan owns the series it folds, so each iteration needs its
+                    // own copy. `iter_batched` builds that copy outside the timed
+                    // region, leaving the measurement on the scan itself.
+                    b.iter_batched(
+                        || (*data).clone(),
+                        |owned| black_box(scan_batch(owned, black_box(spec)).unwrap()),
+                        BatchSize::LargeInput,
+                    );
                 },
             );
         }

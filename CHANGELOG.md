@@ -28,6 +28,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`deny.toml`, `osv-scanner.toml`, `lychee.toml`), lint configuration
   (`clippy.toml`), `repo-metadata.toml`, and dual `MIT OR Apache-2.0` licensing.
 
+### Added
+
+- Side feeds: a scan can now supply the reference series, derivatives ticks,
+  order-book snapshots, trades and market cross-sections that a large part of the
+  indicator registry consumes. A batch scan passes them as parallel arrays beside
+  a symbol's candles (`{"AAA": {"candles": [...], "books": [...]}}`), a streaming
+  caller passes them per bar under `feeds`, and a symbol needing no feed keeps the
+  bare `{"AAA": [candle, ...]}` form. The shapes mirror `wickra-backtest`'s
+  `RunRequest` and `StepFeeds`, so the same document describes a bar in either
+  tool. `Screener::feed_step` is the Rust entry point; every binding gets it
+  through the existing JSON `command` boundary unchanged.
+- `screener_core::feed_kind` reports which feed an indicator consumes, and
+  `ScanSpec::required_feeds` reports what a spec needs before a dataset is
+  assembled.
+
+### Fixed
+
+- An indicator whose feed was not supplied used to resolve, tick and return
+  nothing on every bar, so a screen naming one ran to completion and matched
+  nothing — indistinguishable from a condition that was simply never true. That
+  covered the pairwise, derivatives, order-book, trade-flow, trade-quote and
+  market-breadth families. Those indicators now work when their feed is supplied,
+  and a spec whose feed the scan cannot supply is refused, naming the feed.
+- A side feed that is not exactly as long as the candle array is refused, and a
+  malformed book, tick, trade or cross-section is reported rather than dropped.
+
 ### Changed
 
 - `wickra-backtest-core` is consumed from crates.io (0.1.2) instead of git. It
