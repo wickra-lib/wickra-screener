@@ -29,6 +29,9 @@ node_modules/
 
 # WASM build artifacts
 bindings/wasm/pkg/
+# `wasm-pack build --target nodejs` output, used by the WASM tests. The `web`
+# build in pkg/ is what ships; this one exists to be executed.
+bindings/wasm/pkg-node/
 
 # Go: the C ABI library is staged per-platform by CI, never committed here.
 bindings/go/lib/*/

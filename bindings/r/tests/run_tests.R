@@ -79,5 +79,99 @@ if (!is.null(g)) {
     stopifnot(identical(trimws(got), expected))
   }
 }
+## streaming equals batch, driven through the same command boundary.
+##
+## screener-core proves this in Rust, but that says nothing about the boundary
+## this binding crosses. The golden block above only ever sends {"cmd":"scan"},
+## so feed and evaluate were exercised in no language at all -- which is how the
+## C ABI shipped a command that ran twice under the two-call idiom this binding
+## uses: scan is a pure function of its payload, so it looked correct while every
+## feed applied its candle twice.
+##
+## Only the candle-only specs are used. A feeds_* spec needs side feeds the
+## streaming envelope carries per bar, and derived_breadth needs the market
+## panel, which a streaming screener cannot derive.
+##
+## base R carries no JSON parser and the binding takes no dependency for one. The
+## fixture is machine-generated and each candle is a flat object, so matching
+## brace runs without nested braces is enough; the counts are asserted below so a
+## bad split fails loudly instead of comparing nothing.
+##
+## The fixtures are committed, so their absence is a broken checkout rather than
+## a phase that has not arrived yet. Skipping here would compare nothing and
+## report success.
+if (is.null(g)) {
+  stop("golden fixtures not found; the streaming comparison would test nothing")
+}
+{
+  streaming_specs <- c(
+    "momentum", "mean_reversion", "cross_section_rank",
+    "breadth", "crossover", "compound"
+  )
+  data_text <- datasets[["data.json"]]
+
+  key_hits <- regmatches(data_text, gregexpr('"[^"]+"[[:space:]]*:[[:space:]]*[[]', data_text))[[1]]
+  symbol_names <- gsub('^"|"[[:space:]]*:[[:space:]]*[[]$', "", key_hits)
+  stopifnot(length(symbol_names) >= 2)
+
+  candle_of <- function(symbol) {
+    start <- regexpr(paste0('"', symbol, '"[[:space:]]*:[[:space:]]*[[]'), data_text)
+    stopifnot(start > 0)
+    rest <- substring(data_text, start)
+    close_at <- regexpr("[]]", rest)
+    stopifnot(close_at > 0)
+    body <- substring(rest, 1, close_at)
+    regmatches(body, gregexpr("[{][^{}]*[}]", body))[[1]]
+  }
+
+  for (symbol in symbol_names) {
+    stopifnot(length(candle_of(symbol)) >= 10)
+  }
+
+  feed_all <- function(screener) {
+    for (symbol in symbol_names) {
+      for (candle in candle_of(symbol)) {
+        wkscreen_command(
+          screener,
+          paste0('{"cmd":"feed","symbol":"', symbol, '","candle":', candle, "}")
+        )
+      }
+    }
+  }
+
+  compared <- 0
+  for (name in streaming_specs) {
+    spec_path <- file.path(g, "specs", paste0(name, ".json"))
+    stopifnot(file.exists(spec_path))
+    spec_json <- paste(readLines(spec_path, warn = FALSE), collapse = "\n")
+
+    batch_screener <- wkscreen_new(spec_json)
+    batch <- trimws(wkscreen_command(
+      batch_screener, paste0('{"cmd":"scan","data":', data_text, "}")
+    ))
+
+    stream_screener <- wkscreen_new(spec_json)
+    feed_all(stream_screener)
+    streamed <- trimws(wkscreen_command(stream_screener, '{"cmd":"evaluate"}'))
+
+    if (!identical(streamed, batch)) {
+      stop(paste0("streaming != batch for spec ", name))
+    }
+    compared <- compared + 1
+  }
+  ## A loop that compared nothing passes; say how many it actually did.
+  stopifnot(compared == length(streaming_specs))
+
+  ## reset returns a screener to its pre-feed state
+  spec_json <- paste(
+    readLines(file.path(g, "specs", "momentum.json"), warn = FALSE), collapse = "\n"
+  )
+  rscreener <- wkscreen_new(spec_json)
+  empty <- wkscreen_command(rscreener, '{"cmd":"evaluate"}')
+  feed_all(rscreener)
+  stopifnot(!identical(wkscreen_command(rscreener, '{"cmd":"evaluate"}'), empty))
+  wkscreen_command(rscreener, '{"cmd":"reset"}')
+  stopifnot(identical(wkscreen_command(rscreener, '{"cmd":"evaluate"}'), empty))
+}
 
 cat("wickra-screener R tests passed\n")
