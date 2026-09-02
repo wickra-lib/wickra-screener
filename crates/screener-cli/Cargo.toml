@@ -19,6 +19,11 @@ workspace = true
 name = "wickra-screener"
 path = "src/main.rs"
 
+[features]
+# Source the universe from an exchange instead of from files. Native only, and
+# read-only: the binary sends no key and places no order.
+live = ["screener-core/live"]
+
 [dependencies]
 # The data-driven scan core.
 screener-core.workspace = true

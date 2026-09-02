@@ -73,7 +73,14 @@ cargo run -p wickra-screener -- --spec golden/specs/momentum.json --data golden/
 ```
 
 Each `<SYMBOL>.csv` in the `--data` directory is one symbol's candle history; or
-pass a JSON dataset on standard input with `--stdin`.
+pass a JSON dataset on standard input with `--stdin`. Built with the optional
+`live` feature, `--live <venue>` pulls the spec's universe straight from one of
+the ten exchanges the [wickra-exchange](https://github.com/wickra-lib/wickra-exchange)
+facade supports — public market data only, no key sent and no order placed:
+
+```bash
+cargo run -p wickra-screener --features live --   --spec myscreen.json --live binance --interval 1h --bars 500
+```
 
 ## ScanSpec / conditions
 

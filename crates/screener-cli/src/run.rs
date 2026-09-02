@@ -15,13 +15,7 @@ pub fn run(args: &Args) -> Result<String, String> {
         spec.limit = Some(limit);
     }
 
-    let data = if args.stdin {
-        load_stdin()?
-    } else if let Some(dir) = &args.data {
-        load_data_dir(dir)?
-    } else {
-        return Err("no data source (pass --data or --stdin)".to_string());
-    };
+    let data = load_universe(args, &spec)?;
 
     let report = scan_batch(data, &spec).map_err(|e| e.to_string())?;
 
@@ -33,6 +27,41 @@ pub fn run(args: &Args) -> Result<String, String> {
         }
         Format::Text => render_text(&report),
     })
+}
+
+/// Load the universe from whichever source the arguments name.
+fn load_universe(args: &Args, spec: &ScanSpec) -> Result<BTreeMap<String, SymbolInput>, String> {
+    if args.stdin {
+        return load_stdin();
+    }
+    if let Some(dir) = &args.data {
+        return load_data_dir(dir);
+    }
+    load_live(args, spec)
+}
+
+/// Pull the spec's universe from an exchange.
+#[cfg(feature = "live")]
+fn load_live(args: &Args, spec: &ScanSpec) -> Result<BTreeMap<String, SymbolInput>, String> {
+    use screener_core::{ExchangeOptions, LiveUniverse};
+
+    let Some(venue) = &args.live else {
+        return Err("no data source (pass --data, --stdin or --live)".to_string());
+    };
+    let mut universe = LiveUniverse::connect(
+        venue,
+        args.interval.clone(),
+        args.bars,
+        &ExchangeOptions::default(),
+    )
+    .map_err(|e| e.to_string())?;
+    universe.fetch(&spec.universe).map_err(|e| e.to_string())
+}
+
+/// Without the `live` feature there is no third source to fall through to.
+#[cfg(not(feature = "live"))]
+fn load_live(_args: &Args, _spec: &ScanSpec) -> Result<BTreeMap<String, SymbolInput>, String> {
+    Err("no data source (pass --data or --stdin)".to_string())
 }
 
 /// Read and parse a spec file, choosing JSON or TOML by extension.
