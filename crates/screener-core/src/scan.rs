@@ -175,7 +175,7 @@ pub(crate) fn evaluate_universe(
 ) -> ScanReport {
     let mut matches: Vec<ScanResult> = Vec::new();
     for (symbol, state) in &universe.symbols {
-        if !eval_condition(&spec.condition, symbol, universe) {
+        if !eval_condition(&spec.condition, symbol, state, universe) {
             continue;
         }
         let mut values = BTreeMap::new();

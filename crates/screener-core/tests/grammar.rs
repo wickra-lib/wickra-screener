@@ -301,3 +301,91 @@ fn a_trend_condition_names_the_bar_it_compared_against() {
     assert_eq!(values.get("price.close"), Some(&40.0));
     assert_eq!(values.get("prev(price.close,2)"), Some(&20.0));
 }
+
+// --- the paths a report takes when a value is missing ------------------------
+
+/// A scan whose universe received nothing at all: there is no last bar to be
+/// older than, so nothing is stale and everything is missing.
+#[test]
+fn a_scan_with_no_data_reports_no_staleness() {
+    let report = scan_batch(
+        BTreeMap::new(),
+        &spec(cmp(close(), Comparator::Gt, constant(0.0))),
+    )
+    .expect("an empty dataset is a scan of nothing, not an error");
+    assert_eq!(report.scanned, 0);
+    assert_eq!(report.missing, [SYMBOL]);
+    assert!(report.stale.is_empty());
+    assert!(report.matches.is_empty());
+}
+
+/// Ranking by an expression that only some symbols can answer: the ones with a
+/// score come first, and the ones without keep a stable order among themselves.
+#[test]
+fn matches_without_a_score_sort_after_the_ones_with_one() {
+    use screener_core::RankSpec;
+
+    // Rank by the close five bars back. Only the long series reaches that far.
+    let five_back = Expr::Prev {
+        of: Box::new(close()),
+        bars: 5,
+    };
+    let long: Vec<Candle> = (0..8)
+        .map(|i| candle(i64::from(i), 10.0 + f64::from(i)))
+        .collect();
+    let short: Vec<Candle> = (0..2)
+        .map(|i| candle(i64::from(i), 50.0 + f64::from(i)))
+        .collect();
+
+    let mut spec = ScanSpec {
+        universe: vec!["AAA".into(), "BBB".into(), "CCC".into()],
+        timeframe: None,
+        reference: None,
+        breadth: None,
+        condition: cmp(close(), Comparator::Gt, constant(0.0)),
+        rank: Some(RankSpec {
+            by: five_back,
+            desc: true,
+        }),
+        limit: None,
+    };
+    let data: BTreeMap<String, SymbolInput> = BTreeMap::from([
+        ("AAA".to_string(), short.clone().into()),
+        ("BBB".to_string(), long.into()),
+        ("CCC".to_string(), short.into()),
+    ]);
+
+    let report = scan_batch(data.clone(), &spec).expect("scan");
+    let order: Vec<&str> = report.matches.iter().map(|m| m.symbol.as_str()).collect();
+    assert_eq!(order, ["BBB", "AAA", "CCC"], "scored first, then by symbol");
+    assert!(report.matches[0].score.is_some());
+    assert!(report.matches[1].score.is_none());
+
+    // Ascending puts the scored one first just the same: a missing score is not
+    // a small score, it is the absence of one.
+    spec.rank = spec.rank.map(|r| RankSpec { desc: false, ..r });
+    let report = scan_batch(data, &spec).expect("scan");
+    assert_eq!(report.matches[0].symbol, "BBB");
+}
+
+/// A trend condition on a symbol whose window does not reach the bar it names
+/// contributes no comparison value to the report.
+#[test]
+fn a_trend_beyond_the_history_explains_nothing() {
+    let report = scan_batch(
+        data(&[10.0, 20.0]),
+        &spec(Condition::Any {
+            conditions: vec![
+                Condition::Rising {
+                    expr: close(),
+                    bars: 5,
+                },
+                cmp(close(), Comparator::Gt, constant(0.0)),
+            ],
+        }),
+    )
+    .expect("scan");
+    let values = &report.matches[0].values;
+    assert!(values.contains_key("price.close"));
+    assert!(!values.contains_key("prev(price.close,5)"), "{values:?}");
+}
