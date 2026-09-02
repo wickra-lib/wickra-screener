@@ -266,4 +266,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   seven days later, when it reads as unrelated. The advisory job shows it now and
   cannot stop anything.
 
+### Added
+
+- A `codspeed` workflow measuring the benches on every pull request and
+  commenting the result. `bench.yml` runs nightly, uploads a criterion artifact
+  and prints numbers a person has to go and read, so a scan that got slower lands
+  and is noticed weeks later or not at all. CodSpeed counts instructions under
+  instrumentation rather than wall clock, which is what makes a shared runner
+  usable. The workspace `criterion` is now an alias for
+  `codspeed-criterion-compat` 5.0.1 — without it the job runs, reports nothing
+  and passes. The bench source is unchanged.
+- A `python-wheel-container-smoke` job building the wheel in the manylinux and
+  musllinux containers on every push. That build happened only in `release.yml`,
+  on a `v*` tag, where a failure is found at the one moment nothing can be taken
+  back; the `python` job builds on the runner itself and cannot see a
+  container-only break.
+
+### Fixed
+
+- Each published package ships its own README. `release.yml` copied the root
+  README over `bindings/python/README.md` (for the wheel and again for the sdist)
+  and over `bindings/node/README.md` before packing. Those are purpose-written
+  62- and 61-line files linking absolutely; the root README is 322 lines with 19
+  repository-relative links, kept relative by design because it is read on
+  GitHub. PyPI and npm render the packaged README as the description, so both
+  would have shipped 19 dead links — as the published `wickra` package on PyPI
+  does today, from the same three lines in that repository.
+- `check_readme_links.py` also fails when a workflow copies the root README over
+  a binding one. Checking the file in the tree proves nothing if the release
+  replaces it moments before packing.
+
 [Unreleased]: https://github.com/wickra-lib/wickra-screener/commits/main

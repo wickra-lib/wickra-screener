@@ -66,11 +66,45 @@ def shipping_readmes() -> list[str]:
     return sorted(found)
 
 
+def root_readme_overwrites() -> list[str]:
+    """Workflow lines that copy the root README over a binding README.
+
+    Checking the file in the tree proves nothing if the release workflow replaces
+    it moments before packing. release.yml used to do exactly that for the Python
+    wheel, the Python sdist and the npm tarball, so the 62-line binding README
+    with absolute links was swapped for the 322-line root README with 19 relative
+    ones -- and PyPI and npm render that as the package description. The
+    published `wickra` package still shows those dead links today, which is what
+    turned this from a guess into a check.
+    """
+    hits = []
+    workflows = os.path.join(ROOT, ".github", "workflows")
+    if not os.path.isdir(workflows):
+        return hits
+    pattern = re.compile(r"^\s*.*\bcp\b.*README\.md.*$", re.M)
+    for name in sorted(os.listdir(workflows)):
+        if not name.endswith((".yml", ".yaml")):
+            continue
+        with open(os.path.join(workflows, name), encoding="utf-8") as handle:
+            for match in pattern.finditer(handle.read()):
+                line = match.group(0).strip()
+                # A copy whose source is the root README and whose destination is
+                # under bindings/. Both spellings occur: from the root, and from
+                # inside the package directory with `../../`.
+                if re.search(r"cp\s+(\.\./\.\./)?README\.md", line) and (
+                    "bindings/" in line or line.rstrip().endswith("README.md")
+                ):
+                    hits.append(f"{name}: {line}")
+    return hits
+
+
 def main() -> int:
     paths = shipping_readmes()
     if not paths:
         print("no binding READMEs found", file=sys.stderr)
         return 1
+
+    clobbers = root_readme_overwrites()
 
     failures = []
     width = max(len(os.path.relpath(p, ROOT)) for p in paths) + 2
@@ -83,22 +117,40 @@ def main() -> int:
         state = f"relative links: {len(found)}" if found else "all links absolute"
         print(f"  {rel:<{width}} {state}")
 
-    if failures:
-        print(
-            "\nthese READMEs ship as package long descriptions, where a relative "
-            "link is dead:",
-            file=sys.stderr,
-        )
-        for failure in failures:
-            print(f"  {failure}", file=sys.stderr)
-        print(
-            "\nuse https://github.com/wickra-lib/wickra-screener/blob/main/<path> "
-            "instead.",
-            file=sys.stderr,
-        )
+    if clobbers:
+        print(f"\n  {'workflows copying the root README':<{width}} {len(clobbers)}")
+
+    if failures or clobbers:
+        if failures:
+            print(
+                "\nthese READMEs ship as package long descriptions, where a relative "
+                "link is dead:",
+                file=sys.stderr,
+            )
+            for failure in failures:
+                print(f"  {failure}", file=sys.stderr)
+            print(
+                "\nuse https://github.com/wickra-lib/wickra-screener/blob/main/<path> "
+                "instead.",
+                file=sys.stderr,
+            )
+        if clobbers:
+            print(
+                "\na workflow replaces a binding README with the root one before "
+                "packing, so what this script checked is not what ships:",
+                file=sys.stderr,
+            )
+            for hit in clobbers:
+                print(f"  {hit}", file=sys.stderr)
+            print(
+                "\nthe root README keeps relative links by design; the binding "
+                "READMEs are written for their registries. Let each ship its own.",
+                file=sys.stderr,
+            )
         return 1
 
-    print(f"\nall {len(paths)} binding READMEs link absolutely.")
+    print(f"\nall {len(paths)} binding READMEs link absolutely, and no workflow "
+          f"overwrites one.")
     return 0
 
 

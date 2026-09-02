@@ -175,9 +175,6 @@ jobs:
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.11"
-      - name: Sync root README into bindings/python so it ships with the wheel
-        shell: bash
-        run: cp README.md bindings/python/README.md
       # The Python binding depends only on screener-core without the `live`
       # feature (no native networking), so the manylinux/musllinux containers
       # build the wheel with no extra system dependencies.
@@ -201,8 +198,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Sync root README into bindings/python so it ships in the sdist
-        run: cp README.md bindings/python/README.md
       - uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
           working-directory: bindings/python
@@ -393,11 +388,6 @@ jobs:
             publish_dir "$dir" || fail=1
           done
           exit $fail
-
-      - name: Sync root README into bindings/node so it ships with the npm tarball
-        shell: bash
-        run: cp ../../README.md README.md
-        working-directory: bindings/node
 
       - name: Publish main package to npm (idempotent)
         working-directory: bindings/node
