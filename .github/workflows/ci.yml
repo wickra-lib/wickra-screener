@@ -480,7 +480,8 @@ jobs:
           export WKSCREEN_INC="${WKSCREEN_INC//\\//}"
           export WKSCREEN_LIB="${WKSCREEN_LIB//\\//}"
           if command -v cygpath >/dev/null 2>&1; then
-            export PATH="$(cygpath -u "$WKSCREEN_LIB"):$PATH"
+            WKSCREEN_LIB_UNIX=$(cygpath -u "$WKSCREEN_LIB")
+            export PATH="$WKSCREEN_LIB_UNIX:$PATH"
           else
             export LD_LIBRARY_PATH="$WKSCREEN_LIB:$LD_LIBRARY_PATH"
             export DYLD_LIBRARY_PATH="$WKSCREEN_LIB:$DYLD_LIBRARY_PATH"

@@ -1,0 +1,13 @@
+# actionlint configuration.
+#
+# actionlint validates `runs-on` against a list of runner labels baked into the
+# release it ships. GitHub adds hosted runners faster than that list is cut, so a
+# label can be real and still unknown to the linter.
+self-hosted-runner:
+  labels:
+    # A GitHub-hosted Windows-on-ARM runner, not a self-hosted one. It is what
+    # builds the aarch64-pc-windows-msvc artefacts in release.yml — the ones the
+    # 0.2.7 release of the main library restored after npm unblocked the package
+    # name — so it is load-bearing rather than aspirational. This entry goes away
+    # when actionlint's built-in list catches up.
+    - windows-11-arm
