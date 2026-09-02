@@ -27,6 +27,11 @@ pub enum Error {
         /// The candle count it has to match.
         candles: usize,
     },
+    /// A symbol was fed that the spec's universe does not name. The universe is
+    /// what the spec asks to be screened, so folding a symbol outside it would
+    /// put values into a scan that the screen never asked for.
+    #[error("symbol {0} is not in the spec's universe")]
+    NotInUniverse(String),
     /// A side feed entry could not be converted to the type indicators consume.
     #[error("feed: {0}")]
     Feed(String),

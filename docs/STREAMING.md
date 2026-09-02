@@ -6,8 +6,8 @@ at a time.
 
 ## Batch
 
-`scan_batch(universe, spec)` folds every symbol over its full candle history and
-evaluates the condition tree at the last bar:
+`scan_batch(universe, spec)` folds every symbol of the spec's universe over its
+full candle history and evaluates the condition tree at the last bar:
 
 ```rust
 use screener_core::{ScanSpec, scan_batch};

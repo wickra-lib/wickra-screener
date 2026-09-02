@@ -39,6 +39,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `RunRequest` and `StepFeeds`, so the same document describes a bar in either
   tool. `Screener::feed_step` is the Rust entry point; every binding gets it
   through the existing JSON `command` boundary unchanged.
+- `ScanReport.missing` names the universe symbols a scan received no data for,
+  and `ScanReport.timeframe` echoes the spec's timeframe label so a report says
+  which bars it describes. Both are omitted from the JSON when empty. The CLI's
+  text output names the missing symbols after the match count.
 - `screener_core::feed_kind` reports which feed an indicator consumes, and
   `ScanSpec::required_feeds` reports what a spec needs before a dataset is
   assembled.
@@ -47,6 +51,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `ScanSpec.universe` is enforced. It was validated for being non-empty and then
+  never read again: a batch scan folded whatever symbols the caller sent and
+  `scanned` counted them, so a symbol outside the universe was screened anyway
+  and one inside it that never arrived left no trace. A scan now folds exactly the
+  universe, `scanned` counts the universe symbols it actually folded, and the ones
+  no data arrived for are named in `ScanReport.missing`. Feeding a symbol the
+  universe does not name is refused.
 - An indicator whose feed was not supplied used to resolve, tick and return
   nothing on every bar, so a screen naming one ran to completion and matched
   nothing — indistinguishable from a condition that was simply never true. That

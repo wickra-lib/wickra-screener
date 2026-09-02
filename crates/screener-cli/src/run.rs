@@ -129,7 +129,11 @@ fn parse_csv(content: &str) -> Result<Vec<Candle>, String> {
 /// Render a report as an aligned text table.
 fn render_text(report: &ScanReport) -> String {
     if report.matches.is_empty() {
-        return format!("no matches ({} scanned)\n", report.scanned);
+        return format!(
+            "no matches ({} scanned{})\n",
+            report.scanned,
+            missing_note(report)
+        );
     }
 
     let mut keys: BTreeSet<String> = BTreeSet::new();
@@ -182,11 +186,28 @@ fn render_text(report: &ScanReport) -> String {
     }
     let _ = write!(
         out,
-        "\n{} match(es), {} scanned\n",
+        "\n{} match(es), {} scanned{}\n",
         report.matches.len(),
-        report.scanned
+        report.scanned,
+        missing_note(report)
     );
     out
+}
+
+/// The trailing note naming the universe symbols no data arrived for.
+///
+/// A scan that silently left symbols out reads exactly like one that saw the
+/// whole universe, so the omission is stated rather than left to be inferred
+/// from a count. Empty when nothing is missing.
+fn missing_note(report: &ScanReport) -> String {
+    if report.missing.is_empty() {
+        return String::new();
+    }
+    format!(
+        ", {} missing ({})",
+        report.missing.len(),
+        report.missing.join(", ")
+    )
 }
 
 #[cfg(test)]
@@ -212,7 +233,23 @@ mod tests {
         let report = ScanReport {
             matches: vec![],
             scanned: 5,
+            missing: vec![],
+            timeframe: None,
         };
-        assert!(render_text(&report).contains("no matches"));
+        let text = render_text(&report);
+        assert!(text.contains("no matches"));
+        assert!(!text.contains("missing"));
+    }
+
+    #[test]
+    fn render_text_names_the_missing_symbols() {
+        let report = ScanReport {
+            matches: vec![],
+            scanned: 1,
+            missing: vec!["BBB".to_string(), "CCC".to_string()],
+            timeframe: None,
+        };
+        let text = render_text(&report);
+        assert!(text.contains("2 missing (BBB, CCC)"), "{text}");
     }
 }

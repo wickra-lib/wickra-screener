@@ -29,14 +29,25 @@ pub struct ScanResult {
     pub score: Option<f64>,
 }
 
-/// The result of a scan: the matches (sorted and limited) and how many symbols
-/// were scanned.
+/// The result of a scan: the matches (sorted and limited), how many symbols were
+/// scanned, and which of the spec's symbols never arrived.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct ScanReport {
     /// The matching symbols, after sorting and any limit.
     pub matches: Vec<ScanResult>,
-    /// The number of symbols scanned.
+    /// The number of the spec's symbols that were actually folded.
     pub scanned: usize,
+    /// Symbols the spec's universe names that the scan received no data for.
+    ///
+    /// A screen that quietly leaves out a third of its universe reports the same
+    /// shape as one that saw everything, so the gap is named rather than
+    /// inferred from a count. Omitted when empty.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub missing: Vec<String>,
+    /// The spec's timeframe label, echoed so a report says which bars it
+    /// describes. Omitted when the spec declares none.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub timeframe: Option<String>,
 }
 
 /// Round a value to a fixed 1e-8 grid so every language serializes it
@@ -63,21 +74,31 @@ fn round_to(x: f64) -> f64 {
 /// [`SymbolSeries`]: crate::SymbolSeries
 pub fn scan_batch(data: BTreeMap<String, SymbolInput>, spec: &ScanSpec) -> Result<ScanReport> {
     spec.validate()?;
-    let scanned = data.len();
     let series = ingest(data, spec)?;
+    let missing = spec.missing_from(series.keys().map(String::as_str));
+    let scanned = series.len();
     let mut universe = Universe::new();
     universe.symbols = folded_states(&series, spec)?;
-    Ok(evaluate_universe(&universe, spec, scanned))
+    Ok(evaluate_universe(&universe, spec, scanned, missing))
 }
 
-/// Validate and convert every symbol's input, rejecting a symbol whose feeds do
-/// not cover what the spec's indicators consume.
+/// Validate and convert the input for every symbol the spec's universe names,
+/// rejecting a symbol whose feeds do not cover what the spec's indicators
+/// consume.
+///
+/// Data for a symbol outside the universe is dropped here rather than folded.
+/// The universe is what the spec asks to be screened; scanning whatever the
+/// caller happened to send instead would make the field decorative.
 fn ingest(
     data: BTreeMap<String, SymbolInput>,
     spec: &ScanSpec,
 ) -> Result<BTreeMap<String, CoreSeries>> {
+    let wanted = spec.universe_set();
     let mut out = BTreeMap::new();
     for (symbol, input) in data {
+        if !wanted.contains(symbol.as_str()) {
+            continue;
+        }
         let series = CoreSeries::build(&symbol, input.into_series())?;
         spec.check_feeds(series.available())?;
         out.insert(symbol, series);
@@ -92,6 +113,7 @@ pub(crate) fn evaluate_universe(
     universe: &Universe,
     spec: &ScanSpec,
     scanned: usize,
+    missing: Vec<String>,
 ) -> ScanReport {
     let mut matches: Vec<ScanResult> = Vec::new();
     for (symbol, state) in &universe.symbols {
@@ -120,7 +142,12 @@ pub(crate) fn evaluate_universe(
     if let Some(limit) = spec.limit {
         matches.truncate(limit);
     }
-    ScanReport { matches, scanned }
+    ScanReport {
+        matches,
+        scanned,
+        missing,
+        timeframe: spec.timeframe.clone(),
+    }
 }
 
 /// Build a fully-folded state per symbol, in parallel with rayon.
