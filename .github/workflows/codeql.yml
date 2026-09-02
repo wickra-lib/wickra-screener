@@ -67,6 +67,16 @@ jobs:
           build-mode: ${{ matrix.build-mode }}
           config-file: ./.github/codeql/codeql-config.yml
 
+      # The pom targets release 22 and the runner's default JDK is older, so the
+      # compile fails without this. Same toolchain the `java` CI job uses.
+      - name: Set up the JDK the pom targets
+        if: matrix.language == 'java-kotlin'
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+
       # The binding compiles on its own: it is a thin wrapper over the C ABI and
       # the native library is only needed to run, not to build.
       - name: Build the Java binding for the manual build mode
