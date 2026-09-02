@@ -24,5 +24,11 @@ jobs:
           persist-credentials: false
       - uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
         with:
-          args: --config lychee.toml --no-progress --root-dir "${{ github.workspace }}" "*.md" "bindings/*/README.md"
+          # Every markdown file in the tree, not a hand-listed pair of globs.
+          # The old pattern reached the 12 root files and 7 of the 8 binding
+          # READMEs; docs/ (7 files), the issue templates, examples/, golden/
+          # and bindings/csharp/WickraScreener/README.md were never checked --
+          # 24 of 36 tracked markdown files. exclude_path in lychee.toml keeps
+          # dependency trees and build output out.
+          args: --config lychee.toml --no-progress --root-dir "${{ github.workspace }}" "**/*.md"
           fail: true

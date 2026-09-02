@@ -1,0 +1,10 @@
+# Python 3.9 dev/test tooling for the ci.yml python job.
+#
+# Split from ci-dev-py3.in because pytest and iniconfig both dropped Python 3.9
+# (pytest >= 9.0 and iniconfig >= 2.3 declare requires-python >= 3.10), so a
+# single resolution cannot serve the whole 3.9 - 3.13 matrix. Resolving against
+# 3.9 picks the last releases that still ship for it.
+#
+# Locked output: ci-dev-py39.txt. Refresh via scripts/update-lockfiles.sh.
+maturin
+pytest
