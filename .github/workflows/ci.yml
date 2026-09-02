@@ -548,8 +548,12 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"
+      # An explicit glob rather than `node --test tests/`: Node 22 reads a bare
+      # directory argument as a module path and fails with MODULE_NOT_FOUND,
+      # while Node 20 scans it. The glob behaves the same on both.
       - name: Run the wasm tests
-        run: node --test tests/
+        shell: bash
+        run: node --test tests/*.test.js
         working-directory: bindings/wasm
 
   c-abi:
