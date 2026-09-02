@@ -4,7 +4,9 @@
   "description": "Native binding for wickra-screener (macOS arm64). Installed automatically as an optional dependency of wickra-screener on matching platforms.",
   "main": "wickra-screener.darwin-arm64.node",
   "files": [
-    "wickra-screener.darwin-arm64.node"
+    "wickra-screener.darwin-arm64.node",
+    "LICENSE-MIT",
+    "LICENSE-APACHE"
   ],
   "license": "MIT OR Apache-2.0",
   "engines": {

@@ -4,7 +4,9 @@
   "description": "Native binding for wickra-screener (Linux arm64 GNU). Installed automatically as an optional dependency of wickra-screener on matching platforms.",
   "main": "wickra-screener.linux-arm64-gnu.node",
   "files": [
-    "wickra-screener.linux-arm64-gnu.node"
+    "wickra-screener.linux-arm64-gnu.node",
+    "LICENSE-MIT",
+    "LICENSE-APACHE"
   ],
   "license": "MIT OR Apache-2.0",
   "engines": {
