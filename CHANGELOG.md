@@ -39,6 +39,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `RunRequest` and `StepFeeds`, so the same document describes a bar in either
   tool. `Screener::feed_step` is the Rust entry point; every binding gets it
   through the existing JSON `command` boundary unchanged.
+- A batch scan assembles the market cross-section from its own universe, so the
+  breadth indicator family (`AdvanceDecline`, `McClellanOscillator`, `Trin`,
+  `NewHighsNewLows`, `PercentAboveMa`, …) needs no second data source. Each
+  symbol contributes a member built from its own bar — change against the
+  previous close, bar volume, new high or low over `breadth.period`, and whether
+  the close is above an `Sma(breadth.ma_period)`. An explicit `sections` feed
+  still wins. A streaming screener sees one symbol at a time and cannot derive
+  the panel, so there the feed is still required.
+- `ScanSpec.reference` names a universe symbol as the benchmark whose close feeds
+  every other symbol's pairwise indicators, read at the same bar — instead of
+  repeating that symbol's series under every entry in the dataset.
+- `ScanSpec.breadth` configures the derived panel: `period` for the new-high and
+  new-low lookback (default 52) and `ma_period` for `above_ma` (default 200).
+- `ScanReport.stale` names symbols whose most recent bar is older than the last
+  bar in the universe, so a halted or delisted name does not read like a live one.
+- `ScanSpec::validate` is public, so a caller can check a spec before scanning.
 - `ScanReport.missing` names the universe symbols a scan received no data for,
   and `ScanReport.timeframe` echoes the spec's timeframe label so a report says
   which bars it describes. Both are omitted from the JSON when empty. The CLI's
@@ -51,6 +67,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- A scan that assembles the cross-section itself, or that names a benchmark
+  symbol, folds the universe one timestamp at a time instead of symbol by symbol.
+  Each symbol used to be folded independently and evaluated at *its own* last bar,
+  so a rank or a z-score could compare symbols at different points in time while
+  the documentation promised "every symbol of the same bar". The timeline is the
+  union of the universe's bar timestamps, not the intersection, so one halted
+  symbol does not rewind the scan for the rest. Per-symbol matching is unchanged:
+  a symbol's indicators only ever see that symbol's own bars.
 - `ScanSpec.universe` is enforced. It was validated for being non-empty and then
   never read again: a batch scan folded whatever symbols the caller sent and
   `scanned` counted them, so a symbol outside the universe was screened anyway

@@ -133,6 +133,8 @@ fn arb_spec(universe: Vec<String>) -> impl Strategy<Value = ScanSpec> {
         .prop_map(move |(condition, rank, limit)| ScanSpec {
             universe: universe.clone(),
             timeframe: None,
+            reference: None,
+            breadth: None,
             condition,
             rank: rank.map(|(field, desc)| RankSpec {
                 by: Expr::Price { field },

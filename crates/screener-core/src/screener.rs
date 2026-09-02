@@ -84,11 +84,15 @@ impl Screener {
         let missing = self
             .spec
             .missing_from(self.universe.symbols.keys().map(String::as_str));
+        // Streaming bars arrive one symbol at a time, so the screener cannot
+        // tell a symbol that has stopped printing from one whose next bar has
+        // not been fed yet. Staleness is a batch reading.
         evaluate_universe(
             &self.universe,
             &self.spec,
             self.universe.symbols.len(),
             missing,
+            Vec::new(),
         )
     }
 
