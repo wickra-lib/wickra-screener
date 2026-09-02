@@ -76,21 +76,33 @@ panel itself and a breadth screen needs no second data source:
 { "kind": "indicator", "name": "McClellanOscillator", "params": [19, 39] }
 ```
 
-Each symbol contributes a member built from its own bar: the change against its
-previous close, the bar volume, whether the bar set a new high or low over
-`breadth.period`, and whether the close is above an `Sma(breadth.ma_period)`.
+Each symbol contributes a member built from its own bar:
+
+| Member signal | How it is derived | Configured by |
+|---------------|-------------------|---------------|
+| `change` | close minus the previous close | — |
+| `volume` | the bar volume | — |
+| `new_high` / `new_low` | the bar's high or low against the window before it | `breadth.period` (default 52) |
+| `above_ma` | close above `Sma(n)`; false until the average is warm | `breadth.ma_period` (default 200) |
+| `on_buy_signal` | on a point-and-figure double-top breakout, off on a double-bottom breakdown | `breadth.pnf_box` (default 0.01), `breadth.pnf_reversal` (default 3) |
+
+`on_buy_signal` is what `BullishPercentIndex` counts. `PointAndFigureBars` decides
+where a column ends and hands each one over as it completes; the breakout is then
+the close against the last completed column of that direction. The box size is a
+**fraction of the symbol's first close**, not an absolute price, because one
+absolute box cannot serve a forty-dollar name and a forty-thousand-dollar one at
+the same time.
+
+A symbol whose price has never reversed has completed no column, so no double top
+has been made and it stands on no signal. That is a reading, not a gap.
+
 Supplying an explicit `sections` feed overrides the derived panel — an explicit
 panel is a statement about the data, the derived one a convenience.
 
-Two limits, both refusals rather than quiet wrong answers:
-
-- `BullishPercentIndex` reads a point-and-figure buy signal, which cannot be read
-  off a candle. A derived panel would report it false for every symbol and answer
-  with a confident zero, so a spec naming it against a derived panel is **refused**.
-  Supply an explicit `sections` feed for it.
-- A **streaming** screener sees one symbol's bar at a time and cannot know which
-  other symbols will print at that timestamp, so it cannot derive the panel. A
-  breadth spec fed through `feed` needs an explicit `sections` feed per bar.
+One limit, a refusal rather than a quiet wrong answer: a **streaming** screener
+sees one symbol's bar at a time and cannot know which other symbols will print at
+that timestamp, so it cannot derive the panel. A breadth spec fed through `feed`
+needs an explicit `sections` feed per bar.
 
 ## One bar means one bar
 

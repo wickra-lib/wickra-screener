@@ -51,7 +51,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   every other symbol's pairwise indicators, read at the same bar — instead of
   repeating that symbol's series under every entry in the dataset.
 - `ScanSpec.breadth` configures the derived panel: `period` for the new-high and
-  new-low lookback (default 52) and `ma_period` for `above_ma` (default 200).
+  new-low lookback (default 52), `ma_period` for `above_ma` (default 200), and
+  `pnf_box` / `pnf_reversal` for the point-and-figure box and reversal behind
+  `on_buy_signal` (default one percent of the symbol's first close, three boxes).
+- The derived panel carries `on_buy_signal`, so `BullishPercentIndex` reads a real
+  count. `PointAndFigureBars` decides where a column ends and the breakout is the
+  close against the last completed column of that direction: a double-top
+  breakout turns the signal on, a double-bottom breakdown takes it away.
 - `ScanReport.stale` names symbols whose most recent bar is older than the last
   bar in the universe, so a halted or delisted name does not read like a live one.
 - `ScanSpec::validate` is public, so a caller can check a spec before scanning.

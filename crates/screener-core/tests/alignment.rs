@@ -271,39 +271,84 @@ fn the_breadth_configuration_is_validated() {
     let mut spec = spec_with(always(close()));
     spec.breadth = Some(BreadthSpec {
         period: Some(0),
-        ma_period: None,
+        ..BreadthSpec::default()
     });
     assert!(spec.validate().is_err());
 
     spec.breadth = Some(BreadthSpec {
         period: Some(20),
         ma_period: Some(50),
+        ..BreadthSpec::default()
     });
     assert!(spec.validate().is_ok());
 }
 
-/// `BullishPercentIndex` reads a point-and-figure buy signal that cannot be read
-/// off a candle. A derived panel would report it false for every symbol, so the
-/// spec is refused rather than answered with a confident zero.
+/// `BullishPercentIndex` counts the symbols standing on a point-and-figure buy
+/// signal, which the derived panel now carries. A universe where some symbols
+/// have broken to a double top and others have broken down must not read 0%.
 #[test]
-fn an_underivable_member_signal_is_refused_not_guessed() {
+fn the_bullish_percent_index_reads_the_derived_buy_signals() {
     let last = 1_700_000_000_i64;
+
+    // A path that runs up, reverses, and breaks out above the first leg: the
+    // symbol ends on a buy signal.
+    let bullish = zigzag(&[(100, 130), (130, 108), (108, 140)]);
+    // The mirror image: it breaks back down through the previous column.
+    let bearish = zigzag(&[(100, 130), (130, 108), (108, 140), (140, 95)]);
+    let bars = bullish.len().max(bearish.len());
+
     let data: BTreeMap<String, SymbolInput> = BTreeMap::from([
-        ("AAA".to_string(), series(BARS, last, 100.0, 1.0).into()),
-        ("BBB".to_string(), series(BARS, last, 110.0, 1.0).into()),
-        ("CCC".to_string(), series(BARS, last, 120.0, 1.0).into()),
+        ("AAA".to_string(), path_series(&bullish, last).into()),
+        ("BBB".to_string(), path_series(&bullish, last).into()),
+        ("CCC".to_string(), path_series(&bearish, last).into()),
     ]);
+    assert!(bars > 40, "the path has to be long enough to form columns");
+
     let bpi = Expr::Indicator {
         name: "BullishPercentIndex".to_string(),
         params: vec![],
         field: None,
     };
-    let err = scan_batch(data, &spec_with(always(bpi))).expect_err("refused, not guessed");
-    match &err {
-        Error::UnderivableSignal { indicator, signal } => {
-            assert_eq!(indicator, "BullishPercentIndex");
-            assert!(signal.contains("point-and-figure"), "{signal}");
+    let report = scan_batch(data, &spec_with(always(bpi))).expect("scan");
+    let value = report.matches[0]
+        .values
+        .values()
+        .next()
+        .copied()
+        .expect("a reading");
+    assert!(
+        value > 0.0,
+        "a universe with symbols on a buy signal must not read {value}"
+    );
+    assert!(
+        value < 100.0,
+        "the broken-down symbol must not count: {value}"
+    );
+}
+
+/// Build a price path out of straight legs between the given prices.
+fn zigzag(legs: &[(i32, i32)]) -> Vec<f64> {
+    let mut path = Vec::new();
+    for &(from, to) in legs {
+        let step = if to >= from { 1 } else { -1 };
+        let mut price = from;
+        while price != to {
+            path.push(f64::from(price));
+            price += step;
         }
-        other => panic!("expected UnderivableSignal, got {other}"),
+        path.push(f64::from(to));
     }
+    path
+}
+
+/// Turn a price path into an hourly candle series ending at `last_time`.
+fn path_series(path: &[f64], last_time: i64) -> Vec<Candle> {
+    let n = path.len();
+    path.iter()
+        .enumerate()
+        .map(|(i, close)| {
+            let back = i64::try_from(n - 1 - i).expect("bar count fits i64");
+            candle(last_time - back * 3_600, *close)
+        })
+        .collect()
 }

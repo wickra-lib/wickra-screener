@@ -259,7 +259,7 @@ fn lockstep_states(
                 breadth
                     .get_mut(symbol)
                     .expect("a breadth state per symbol")
-                    .update(candle),
+                    .update(candle)?,
             );
             if spec.reference.as_deref() == Some(symbol.as_str()) {
                 reference_close = Some(candle.close);
