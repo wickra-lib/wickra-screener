@@ -3,6 +3,9 @@ name: Release
 on:
   push:
     tags: ["v*"]
+  # A manual run is for re-driving a release whose tag already exists -- a
+  # publish that flaked, an asset that did not attach. It is not a way to
+  # publish from a branch, and the `guard` job below enforces that.
   workflow_dispatch:
 
 # Least-privilege default for the auto-injected GITHUB_TOKEN. The publish jobs
@@ -26,11 +29,38 @@ env:
   PIP_DEFAULT_TIMEOUT: "120"
 
 jobs:
+  # Everything that publishes runs behind this. A `workflow_dispatch` can be
+  # started from any ref the actor can see, and every job here pushes to a
+  # registry that does not take things back -- so a dispatch from `main` would
+  # publish whatever `main` happened to be, under whatever version its manifests
+  # happened to carry. Tag pushes satisfy this by construction; a dispatch has to
+  # name a tag.
+  guard:
+    name: Refuse to publish from anything but a tag
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check the ref
+        env:
+          REF: ${{ github.ref }}
+        shell: bash
+        run: |
+          case "$REF" in
+            refs/tags/v*)
+              echo "publishing from $REF"
+              ;;
+            *)
+              echo "::error::release.yml publishes to crates.io, PyPI, npm, NuGet and Maven Central, none of which can be undone. It runs on a v* tag; got '$REF'. Re-run this workflow with a tag ref."
+              exit 1
+              ;;
+          esac
+
   # --------------------------------------------------------------------------
   # crates.io: screener-core then the wickra-screener crate (CLI binary)
   # --------------------------------------------------------------------------
   cargo-publish:
     name: Publish to crates.io
+    needs: guard
     timeout-minutes: 45
     runs-on: ubuntu-latest
     environment: release
@@ -109,6 +139,7 @@ jobs:
   # --------------------------------------------------------------------------
   python-wheels:
     name: Build wheels (${{ matrix.target }}/${{ matrix.manylinux }} on ${{ matrix.os }})
+    needs: guard
     timeout-minutes: 45
     strategy:
       fail-fast: false
@@ -163,6 +194,7 @@ jobs:
 
   python-sdist:
     name: Build Python sdist
+    needs: guard
     timeout-minutes: 45
     runs-on: ubuntu-latest
     steps:
@@ -206,6 +238,7 @@ jobs:
   # --------------------------------------------------------------------------
   node-build:
     name: Node build (${{ matrix.target }})
+    needs: guard
     timeout-minutes: 45
     strategy:
       fail-fast: false
@@ -303,6 +336,20 @@ jobs:
         working-directory: bindings/node
         run: npx napi artifacts --output-dir artifacts
 
+      # Each platform package is published on its own and each declares
+      # `MIT OR Apache-2.0`, so each needs the texts that claim refers to.
+      # Listing them in `files` is half of it; they have to be in the directory
+      # when npm packs it, and nothing put them there.
+      - name: Stage the licence texts into each platform package
+        shell: bash
+        run: |
+          set -e
+          for dir in bindings/node/npm/*/; do
+            cp LICENSE-MIT LICENSE-APACHE "$dir"
+          done
+          echo "staged licences:"
+          find bindings/node/npm -name "LICENSE-*" | sort
+
       - name: Publish platform packages (idempotent)
         working-directory: bindings/node
         env:
@@ -392,6 +439,7 @@ jobs:
   # --------------------------------------------------------------------------
   wasm-publish:
     name: Publish wickra-screener-wasm to npm
+    needs: guard
     timeout-minutes: 45
     runs-on: ubuntu-latest
     environment: release
@@ -472,6 +520,7 @@ jobs:
   # --------------------------------------------------------------------------
   cli-binaries:
     name: CLI binary (${{ matrix.target }})
+    needs: guard
     timeout-minutes: 45
     strategy:
       fail-fast: false
@@ -521,6 +570,7 @@ jobs:
   # --------------------------------------------------------------------------
   c-abi-build:
     name: C ABI library (${{ matrix.target }})
+    needs: guard
     timeout-minutes: 45
     strategy:
       fail-fast: false
@@ -621,6 +671,16 @@ jobs:
           command: |
             version="${GITHUB_REF_NAME#v}"
             dotnet pack bindings/csharp/WickraScreener/WickraScreener.csproj -c Release -p:Version="$version" -o nupkg
+      # `Stage release assets` looks for *.nupkg among the downloaded
+      # artefacts, and nothing ever uploaded one -- so the package went to
+      # NuGet and never to the release page, and the find that was supposed to
+      # collect it silently matched nothing.
+      - name: Upload the NuGet package for the release page and the attestation
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: nuget-package
+          path: nupkg/*.nupkg
+          if-no-files-found: error
       - name: NuGet login (OIDC -> temporary API key)
         uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
         id: nuget_login
@@ -701,6 +761,18 @@ jobs:
           CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: mvn -B -f bindings/java -Prelease deploy -DskipTests
+      # Maven Central had the jar and the release page did not. Every other
+      # artefact this workflow produces is attached there, and whoever wants to
+      # check a build against its provenance should not have to visit a
+      # different registry for one of them.
+      - name: Upload the jar for the release page and the attestation
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: java-jar
+          path: |
+            bindings/java/target/*.jar
+            !bindings/java/target/*-tests.jar
+          if-no-files-found: error
 
   # Mirror the in-repo Go module to the standalone wickra-screener-go repository
   # so `go get github.com/wickra-lib/wickra-screener-go` builds with no extra
@@ -756,6 +828,28 @@ jobs:
             mkdir -p "$out/lib/$dir"; cp "$src" "$out/lib/$dir/"
           done
           echo "assembled module:"; find "$out" -type f | sort
+      # Nothing compiled the assembled tree before it was pushed. Three steps
+      # copied files into place and the fourth published them, so a mirror that
+      # did not build -- a header out of step with the library, a missing
+      # platform directory, a go.mod that does not resolve standalone -- became
+      # `go get`'s problem rather than this workflow's.
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.23"
+      - name: Build and vet the assembled module before pushing it
+        shell: bash
+        working-directory: wickra-screener-go-module
+        env:
+          CGO_ENABLED: "1"
+        run: |
+          set -e
+          # The runner is linux/amd64, so that is the platform whose staged
+          # library cgo will link against here. The others are checked by their
+          # presence in the tree above, which the assembly step fails without.
+          export LD_LIBRARY_PATH="$PWD/lib/linux_amd64:$LD_LIBRARY_PATH"
+          go vet ./...
+          go build ./...
+          go test ./... 2>&1 | tail -20
       - name: Push to wickra-screener-go and tag the release
         shell: bash
         env:
@@ -788,7 +882,22 @@ jobs:
   github-release:
     name: Attach assets to the draft GitHub Release
     timeout-minutes: 45
-    needs: [cargo-publish, python-publish, node-publish, wasm-publish, cli-binaries, c-abi-build]
+    # Every job that produces an artefact this page carries, not only most of
+    # them. csharp-publish, java-publish and go-mirror were missing, so a run in
+    # which one of them failed still attached assets and published the release:
+    # a page that reads as complete while a registry is empty.
+    needs:
+      [
+        cargo-publish,
+        python-publish,
+        node-publish,
+        wasm-publish,
+        cli-binaries,
+        c-abi-build,
+        csharp-publish,
+        java-publish,
+        go-mirror,
+      ]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -834,6 +943,7 @@ jobs:
           find artifacts -type f -name "*.crate" -exec cp {} release-assets/ \;
           find artifacts -type f -name "*.cdx.json" -exec cp {} release-assets/ \;
           find artifacts -type f -name "*.nupkg" -exec cp {} release-assets/ \;
+          find artifacts -type f -name "*.jar" -exec cp {} release-assets/ \;
           ls -lh release-assets/
           echo "asset-count=$(find release-assets/ -type f | wc -l)"
       - name: Create / update the draft GitHub Release with assets
@@ -892,7 +1002,16 @@ jobs:
   attestations:
     name: Attest build provenance
     timeout-minutes: 45
-    needs: [cargo-publish, python-wheels, python-sdist, github-release]
+    needs:
+      [
+        cargo-publish,
+        python-wheels,
+        python-sdist,
+        c-abi-build,
+        csharp-publish,
+        java-publish,
+        github-release,
+      ]
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -910,6 +1029,25 @@ jobs:
           pattern: wheels-*
           path: artifacts/python
           merge-multiple: true
+      # The crates and wheels were attested; the .NET, Java and C ABI artefacts
+      # were not. Three of the things this workflow ships had no provenance to
+      # be checked against.
+      - name: Download the NuGet package
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: nuget-package
+          path: artifacts/nuget
+      - name: Download the jar
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: java-jar
+          path: artifacts/java
+      - name: Download the C ABI archives
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: c-abi-*
+          path: artifacts/c-abi
+          merge-multiple: true
       - name: Attest build provenance
         id: attest
         uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
@@ -918,6 +1056,9 @@ jobs:
             artifacts/crates/*.crate
             artifacts/python/*.whl
             artifacts/python/*.tar.gz
+            artifacts/nuget/*.nupkg
+            artifacts/java/*.jar
+            artifacts/c-abi/*.tar.gz
       - name: Attach provenance bundle to the GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
