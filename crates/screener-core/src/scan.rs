@@ -380,6 +380,21 @@ fn collect_values(
                 }
             }
         }
+        Condition::Between { value, low, high } => {
+            add_expr_value(value, state, out);
+            add_expr_value(low, state, out);
+            add_expr_value(high, state, out);
+        }
+        Condition::Rising { expr, bars } | Condition::Falling { expr, bars } => {
+            add_expr_value(expr, state, out);
+            // The bar it is compared against is half the reason for the match,
+            // so it is named the same way a `prev` expression would be.
+            if let Some(v) = state.expr_at(expr, *bars as usize) {
+                if v.is_finite() {
+                    out.insert(format!("prev({},{bars})", expr.key()), round_to(v));
+                }
+            }
+        }
         Condition::Breadth { inner, .. } => collect_values(inner, symbol, state, universe, out),
         Condition::All { conditions } | Condition::Any { conditions } => {
             for c in conditions {

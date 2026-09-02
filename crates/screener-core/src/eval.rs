@@ -37,6 +37,25 @@ pub(crate) fn eval_condition(cond: &Condition, sym: &str, universe: &Universe) -
             };
             point_compare(ratio_universe, *op, *ratio)
         }
+        Condition::Between { value, low, high } => {
+            let Some(state) = universe.symbols.get(sym) else {
+                return false;
+            };
+            match (
+                state.expr_cur(value),
+                state.expr_cur(low),
+                state.expr_cur(high),
+            ) {
+                (Some(v), Some(lo), Some(hi)) => lo <= v && v <= hi,
+                _ => false,
+            }
+        }
+        Condition::Rising { expr, bars } => {
+            trend(expr, *bars, sym, universe, |now, then| now > then)
+        }
+        Condition::Falling { expr, bars } => {
+            trend(expr, *bars, sym, universe, |now, then| now < then)
+        }
         Condition::All { conditions } => {
             conditions.iter().all(|c| eval_condition(c, sym, universe))
         }
@@ -44,6 +63,24 @@ pub(crate) fn eval_condition(cond: &Condition, sym: &str, universe: &Universe) -
             conditions.iter().any(|c| eval_condition(c, sym, universe))
         }
         Condition::Not { condition } => !eval_condition(condition, sym, universe),
+    }
+}
+
+/// Compare an expression against its own value `bars` bars ago. A symbol whose
+/// window does not reach that far has no answer, so the condition is false.
+fn trend(
+    expr: &Expr,
+    bars: u32,
+    sym: &str,
+    universe: &Universe,
+    holds: fn(f64, f64) -> bool,
+) -> bool {
+    let Some(state) = universe.symbols.get(sym) else {
+        return false;
+    };
+    match (state.expr_cur(expr), state.expr_at(expr, bars as usize)) {
+        (Some(now), Some(then)) => holds(now, then),
+        _ => false,
     }
 }
 
@@ -92,6 +129,7 @@ fn point_compare(a: f64, op: Comparator, b: f64) -> bool {
         Comparator::Le => a <= b,
         // Relative tolerance, not bit equality: the golden compares report JSON.
         Comparator::Eq => (a - b).abs() <= 1e-9 * a.abs().max(b.abs()).max(1.0),
+        Comparator::Ne => (a - b).abs() > 1e-9 * a.abs().max(b.abs()).max(1.0),
         Comparator::CrossesAbove | Comparator::CrossesBelow => false,
     }
 }

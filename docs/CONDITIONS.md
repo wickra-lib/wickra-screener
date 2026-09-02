@@ -34,8 +34,10 @@ An expression reduces to one scalar per symbol at the evaluated bar. The tag is
 | `kind` | Fields | Value |
 |--------|--------|-------|
 | `const` | `value` | a literal number |
-| `price` | `field` | a candle field: `open` / `high` / `low` / `close` / `volume` |
+| `price` | `field` | a candle field: `open` / `high` / `low` / `close` / `volume`, or an average of several: `hlc3` = `(h+l+c)/3`, `ohlc4` = `(o+h+l+c)/4` |
 | `indicator` | `name`, `params`, `field?` | a Wickra indicator output |
+| `prev` | `of`, `bars` | the value `of` had `bars` bars ago |
+| `add` / `sub` / `mul` / `div` | `left`, `right` | arithmetic over two expressions |
 
 Indicator `name` is the **PascalCase** registry name (`Rsi`, `Ema`, `Roc`,
 `Sma`, `Macd`, `BollingerBands`, …); `params` is its parameter list; the optional
@@ -46,6 +48,28 @@ with `field: "hist"`). See [INDICATORS.md](INDICATORS.md).
 { "kind": "indicator", "name": "Rsi", "params": [14] }
 { "kind": "indicator", "name": "BollingerBands", "params": [20, 2], "field": "lower" }
 ```
+
+Compound forms nest, so a screen can name the quantity it actually cares about
+rather than only the raw series:
+
+```json
+// how far price sits above its 20-bar average
+{ "kind": "sub",
+  "left":  { "kind": "price", "field": "close" },
+  "right": { "kind": "indicator", "name": "Sma", "params": [20] } }
+
+// price relative to where it was five bars ago
+{ "kind": "div",
+  "left":  { "kind": "price", "field": "close" },
+  "right": { "kind": "prev", "of": { "kind": "price", "field": "close" }, "bars": 5 } }
+```
+
+A `prev` shifts the bar an expression is read at, not the value it returns, so
+`prev(a - b, 2)` and `prev(a, 2) - prev(b, 2)` are the same thing. Each symbol
+keeps exactly as many bars as the deepest lookback in the spec; a lookback that
+reaches past a symbol's history has no value, and a condition over it is false.
+A division that is not finite likewise has no value, so a divide by zero matches
+nothing rather than comparing against infinity.
 
 ## Conditions (`type`)
 
@@ -60,9 +84,32 @@ A condition returns true/false per symbol. The tag is `type` (snake_case):
   "right": { "kind": "const", "value": 30.0 } }
 ```
 
-`op` is one of: `gt`, `lt`, `ge`, `le`, `eq`, `crosses_above`, `crosses_below`.
-The two crossing operators compare the last two bars (the left series crossing
-the right series between the previous and current bar).
+`op` is one of: `gt`, `lt`, `ge`, `le`, `eq`, `ne`, `crosses_above`,
+`crosses_below`. The two crossing operators compare the last two bars (the left
+series crossing the right series between the previous and current bar). `eq` and
+`ne` are a relative-tolerance pair, not bit equality.
+
+### `between` — inside a range
+
+```json
+{ "type": "between",
+  "value": { "kind": "indicator", "name": "Rsi", "params": [14] },
+  "low":   { "kind": "const", "value": 30 },
+  "high":  { "kind": "const", "value": 70 } }
+```
+
+Holds when `low <= value <= high`, inclusive on both ends. All three are
+expressions, so a band can be an indicator rather than a constant.
+
+### `rising` / `falling` — against an earlier bar
+
+```json
+{ "type": "rising", "expr": { "kind": "price", "field": "hlc3" }, "bars": 5 }
+```
+
+Holds when the expression is greater (`rising`) or less (`falling`) than its own
+value `bars` bars ago. `bars` must be at least 1: a comparison against the bar it
+stands on can never hold, so writing zero is refused rather than evaluated.
 
 ### `cross_section` — rank within the universe
 

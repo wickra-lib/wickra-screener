@@ -15,12 +15,13 @@ use std::path::{Path, PathBuf};
 
 use screener_core::{scan_batch, ScanSpec, SymbolInput};
 
-const SPECS: [&str; 5] = [
+const SPECS: [&str; 6] = [
     "momentum",
     "mean_reversion",
     "cross_section_rank",
     "breadth",
     "crossover",
+    "compound",
 ];
 
 fn golden_dir() -> PathBuf {

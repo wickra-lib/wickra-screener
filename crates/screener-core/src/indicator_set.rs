@@ -79,28 +79,29 @@ struct Entry {
 /// named sub-output under `<base>.<field>`.
 pub(crate) struct IndicatorSet {
     items: Vec<Entry>,
-    cur: BTreeMap<String, f64>,
-    prev: BTreeMap<String, f64>,
 }
 
 impl IndicatorSet {
     /// An empty set.
     pub(crate) fn new() -> Self {
-        Self {
-            items: Vec::new(),
-            cur: BTreeMap::new(),
-            prev: BTreeMap::new(),
-        }
+        Self { items: Vec::new() }
     }
 
-    /// Register the indicator an expression needs (constants and price fields
-    /// need none). Idempotent per base key. Errors if the registry does not know
-    /// the indicator or rejects its parameters.
+    /// Register every indicator an expression needs, including the ones nested
+    /// inside a compound form (constants and price fields need none). Idempotent
+    /// per base key. Errors if the registry does not know an indicator or rejects
+    /// its parameters.
     pub(crate) fn required(&mut self, expr: &Expr) -> Result<()> {
-        if let Expr::Indicator { name, params, .. } = expr {
-            let key = base_key(name, params);
+        let mut found: Vec<(String, Vec<f64>)> = Vec::new();
+        expr.visit(&mut |node| {
+            if let Expr::Indicator { name, params, .. } = node {
+                found.push((name.clone(), params.clone()));
+            }
+        });
+        for (name, params) in found {
+            let key = base_key(&name, &params);
             if self.items.iter().all(|e| e.key != key) {
-                let indicator = build(name, params)
+                let indicator = build(&name, &params)
                     .map_err(|e| Error::UnknownIndicator(format!("{name}: {e}")))?;
                 self.items.push(Entry { key, indicator });
             }
@@ -108,11 +109,11 @@ impl IndicatorSet {
         Ok(())
     }
 
-    /// Fold one bar: `prev` becomes the previous `cur`, then every indicator
-    /// ticks against the candle and the bar's feeds and records its primary
-    /// value and named fields into `cur`.
-    pub(crate) fn update(&mut self, candle: &Candle, feeds: BarFeeds<'_>) {
-        self.prev = std::mem::take(&mut self.cur);
+    /// Fold one bar: every indicator ticks against the candle and the bar's
+    /// feeds, and the primary value and each named field are collected into the
+    /// map for this bar. The caller keeps the history; this keeps none.
+    pub(crate) fn update(&mut self, candle: &Candle, feeds: BarFeeds<'_>) -> BTreeMap<String, f64> {
+        let mut values = BTreeMap::new();
         let bar = BarInput {
             candle,
             reference: feeds.reference,
@@ -123,23 +124,13 @@ impl IndicatorSet {
         };
         for entry in &mut self.items {
             if let Some(value) = entry.indicator.update(&bar) {
-                self.cur.insert(entry.key.clone(), value);
+                values.insert(entry.key.clone(), value);
                 for (field, field_value) in entry.indicator.fields() {
-                    self.cur
-                        .insert(format!("{}.{field}", entry.key), field_value);
+                    values.insert(format!("{}.{field}", entry.key), field_value);
                 }
             }
         }
-    }
-
-    /// The current value for a canonical expression key, if computed this bar.
-    pub(crate) fn cur(&self, key: &str) -> Option<f64> {
-        self.cur.get(key).copied()
-    }
-
-    /// The previous-bar value for a canonical expression key.
-    pub(crate) fn prev(&self, key: &str) -> Option<f64> {
-        self.prev.get(key).copied()
+        values
     }
 
     /// The largest warmup period across all registered indicators.
@@ -190,12 +181,42 @@ mod tests {
         .unwrap();
         assert!(set.max_warmup() > 0);
 
+        let mut last = BTreeMap::new();
+        let mut before = BTreeMap::new();
         for c in [1.0, 2.0, 3.0, 4.0, 5.0] {
-            set.update(&candle(c), BarFeeds::default());
+            before = std::mem::replace(&mut last, set.update(&candle(c), BarFeeds::default()));
         }
-        // 3-bar SMA of the last three closes; prev is the previous window.
-        assert_eq!(set.cur("Sma(3)"), Some(4.0));
-        assert_eq!(set.prev("Sma(3)"), Some(3.0));
+        // 3-bar SMA of the last three closes, and of the window before it.
+        assert_eq!(last.get("Sma(3)").copied(), Some(4.0));
+        assert_eq!(before.get("Sma(3)").copied(), Some(3.0));
+    }
+
+    #[test]
+    fn a_compound_expression_registers_the_indicators_nested_in_it() {
+        let mut set = IndicatorSet::new();
+        set.required(&Expr::Sub {
+            left: Box::new(Expr::Indicator {
+                name: "Sma".into(),
+                params: vec![3.0],
+                field: None,
+            }),
+            right: Box::new(Expr::Prev {
+                of: Box::new(Expr::Indicator {
+                    name: "Ema".into(),
+                    params: vec![4.0],
+                    field: None,
+                }),
+                bars: 2,
+            }),
+        })
+        .unwrap();
+
+        let mut values = BTreeMap::new();
+        for c in [1.0, 2.0, 3.0, 4.0, 5.0, 6.0] {
+            values = set.update(&candle(c), BarFeeds::default());
+        }
+        assert!(values.contains_key("Sma(3)"), "{values:?}");
+        assert!(values.contains_key("Ema(4)"), "{values:?}");
     }
 
     #[test]
@@ -222,10 +243,11 @@ mod tests {
         .unwrap();
 
         // Without a reference the indicator ticks and yields nothing, every bar.
+        let mut values = BTreeMap::new();
         for i in 0..40 {
-            set.update(&candle(100.0 + f64::from(i)), BarFeeds::default());
+            values = set.update(&candle(100.0 + f64::from(i)), BarFeeds::default());
         }
-        assert_eq!(set.cur("RollingCorrelation(5)"), None);
+        assert_eq!(values.get("RollingCorrelation(5)"), None);
 
         // With one it produces a value.
         let mut set = IndicatorSet::new();
@@ -235,15 +257,16 @@ mod tests {
             field: None,
         })
         .unwrap();
+        let mut values = BTreeMap::new();
         for i in 0..40 {
             let t = f64::from(i);
             let feeds = BarFeeds {
                 reference: Some(50.0 + (t * 0.5).sin() * 5.0),
                 ..BarFeeds::default()
             };
-            set.update(&candle(100.0 + (t * 0.3).sin() * 10.0), feeds);
+            values = set.update(&candle(100.0 + (t * 0.3).sin() * 10.0), feeds);
         }
-        assert!(set.cur("RollingCorrelation(5)").is_some());
+        assert!(values.contains_key("RollingCorrelation(5)"));
     }
 
     #[test]

@@ -61,6 +61,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ScanReport.stale` names symbols whose most recent bar is older than the last
   bar in the universe, so a halted or delisted name does not read like a live one.
 - `ScanSpec::validate` is public, so a caller can check a spec before scanning.
+- The expression grammar gains the compound forms `prev` (the value an expression
+  had n bars ago) and `add` / `sub` / `mul` / `div`, mirroring
+  `wickra_backtest_core::spec::OperandExpr`. A screen can now name the quantity it
+  cares about — the gap between price and its average, a ratio against an earlier
+  bar — instead of only the raw series. Each symbol keeps exactly as many bars as
+  the deepest lookback in the spec.
+- `PriceField` gains `hlc3` and `ohlc4`.
+- The `ne` comparator, and the `between`, `rising` and `falling` conditions,
+  completing the set `wickra_backtest_core::spec::Condition` already had.
+- A `compound` golden spec exercising every new form. Every binding globs the
+  spec directory, so it is covered in all ten languages without a per-binding
+  change.
 - `ScanReport.missing` names the universe symbols a scan received no data for,
   and `ScanReport.timeframe` echoes the spec's timeframe label so a report says
   which bars it describes. Both are omitted from the JSON when empty. The CLI's
