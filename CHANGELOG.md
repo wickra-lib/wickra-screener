@@ -188,8 +188,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reproducible rather than resolving to whatever the default branch is at the
   time.
 
+### Added
+
+- Four static checks, run by a `binding-surface` CI job. Each guards something no
+  other job can fail on: `check_binding_surface.py` holds all eight language
+  reaches to the exports in `bindings/c/include/wickra_screener.h`, because the
+  golden corpus compares values and a binding that lost a method has no test to
+  run; `check_version_sync.py` asserts that all 23 version declarations across
+  six package managers agree, because a bump that misses one ships a package
+  pinning a binary that was never published; `check_readme_links.py` keeps the
+  binding READMEs free of repository-relative links, which resolve on GitHub and
+  are dead on the registry pages that render them; and `check_license_copies.py`
+  keeps the committed licence texts beside the packages that ship them.
+
 ### Fixed
 
+- The Python wheel and sdist carry `LICENSE-MIT` and `LICENSE-APACHE`. The
+  manifest declared `MIT OR Apache-2.0` and shipped neither text, so maturin —
+  which picks up any `LICEN[CS]E*` beside the manifest — had nothing to pick up,
+  and the package named terms the recipient had to go and find.
 - The Node binding records why CodeQL raises `rust/access-invalid-pointer`
   against its `Screener` struct. The file writes no unsafe and no raw pointer;
   the anchor is the napi-derive expansion, where the run-time type-tag check
