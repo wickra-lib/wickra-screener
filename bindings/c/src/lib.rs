@@ -15,7 +15,9 @@
 //!    written into `out`.
 //!
 //! Whenever `len < cap` the response is written immediately, so a
-//! sufficiently-large buffer needs only one call. Negative returns are reserved
+//! sufficiently-large buffer needs only one call. A command runs once per
+//! *delivered* response: a body produced for a length query, or for a buffer
+//! that turned out too small, is held and handed to the call that reads it. Negative returns are reserved
 //! for unusable arguments ([`WICKRA_SCREENER_ERR_NULL`],
 //! [`WICKRA_SCREENER_ERR_UTF8`]) and caught panics
 //! ([`WICKRA_SCREENER_ERR_PANIC`]); a non-negative return is always the response
@@ -37,7 +39,14 @@ pub const WICKRA_SCREENER_ERR_PANIC: i32 = -3;
 
 /// An opaque handle to a screener instance. Created by [`wickra_screener_new`]
 /// and destroyed by [`wickra_screener_free`]; never dereferenced by the caller.
-pub struct WickraScreener(Screener);
+///
+/// `pending` holds a response that was produced but not delivered, so the
+/// two-call idiom runs a command once rather than twice. See
+/// [`wickra_screener_command`].
+pub struct WickraScreener {
+    screener: Screener,
+    pending: Option<(String, String)>,
+}
 
 /// Read a NUL-terminated C string as `&str`, or `None` on null / bad UTF-8.
 ///
@@ -63,7 +72,10 @@ pub unsafe extern "C" fn wickra_screener_new(spec_json: *const c_char) -> *mut W
         return ptr::null_mut();
     };
     match catch_unwind(AssertUnwindSafe(|| Screener::new(json))) {
-        Ok(Ok(screener)) => Box::into_raw(Box::new(WickraScreener(screener))),
+        Ok(Ok(screener)) => Box::into_raw(Box::new(WickraScreener {
+            screener,
+            pending: None,
+        })),
         _ => ptr::null_mut(),
     }
 }
@@ -88,6 +100,14 @@ pub unsafe extern "C" fn wickra_screener_free(handle: *mut WickraScreener) {
 /// left untouched and the caller should re-call with a `cap` of at least
 /// `len + 1`. Pass `out = NULL`, `cap = 0` to query the length without writing.
 ///
+/// The command runs **once per delivered response**, not once per call. A
+/// response that was produced but not written -- a length query, or a buffer too
+/// small -- is held until the call that reads it, and that call returns it
+/// without running the command again. This matters for every command that
+/// mutates: before it, `feed` applied each candle twice in Go, C, C++, C#, Java
+/// and R, all of which use the two-call idiom, while `scan` looked correct
+/// because it is a pure function of its payload.
+///
 /// # Safety
 /// `handle` must be a valid handle; `cmd_json` a valid NUL-terminated C string;
 /// `out` either null or a writable buffer of at least `cap` bytes.
@@ -104,18 +124,34 @@ pub unsafe extern "C" fn wickra_screener_command(
     let Some(cmd) = (unsafe { opt_str(cmd_json) }) else {
         return WICKRA_SCREENER_ERR_UTF8;
     };
-    let screener = unsafe { &mut (*handle).0 };
-    let response = match catch_unwind(AssertUnwindSafe(|| screener.command_json(cmd))) {
-        // `command_json` folds domain errors into `{"ok":false,...}` JSON, so a
-        // top-level `Err` should not occur; surface it in-band all the same
-        // rather than inventing a new negative code.
-        Ok(result) => result.unwrap_or_else(|err| {
-            format!(
-                "{{\"ok\":false,\"error\":{}}}",
-                json_string(&err.to_string())
-            )
-        }),
-        Err(_) => return WICKRA_SCREENER_ERR_PANIC,
+    let state = unsafe { &mut *handle };
+
+    // A response already produced for this exact command and not yet delivered.
+    // Without this the length-query call and the too-small-buffer retry each run
+    // the command again -- harmless for `scan`, which is a pure function of its
+    // payload, and wrong for every command that mutates: `feed` applied each
+    // candle twice in every language that uses the two-call idiom.
+    let carried = matches!(&state.pending, Some((pending_cmd, _)) if pending_cmd == cmd);
+    let response = if carried {
+        // `carried` proves the entry is present, so the take cannot be None.
+        state.pending.take().expect("pending response present").1
+    } else {
+        // A different command abandons whatever was queued: the caller moved on,
+        // and serving that stale body later would skip an execution it wants.
+        state.pending = None;
+        let screener = &mut state.screener;
+        match catch_unwind(AssertUnwindSafe(|| screener.command_json(cmd))) {
+            // `command_json` folds domain errors into `{"ok":false,...}` JSON, so
+            // a top-level `Err` should not occur; surface it in-band all the same
+            // rather than inventing a new negative code.
+            Ok(result) => result.unwrap_or_else(|err| {
+                format!(
+                    "{{\"ok\":false,\"error\":{}}}",
+                    json_string(&err.to_string())
+                )
+            }),
+            Err(_) => return WICKRA_SCREENER_ERR_PANIC,
+        }
     };
 
     let bytes = response.as_bytes();
@@ -125,6 +161,10 @@ pub unsafe extern "C" fn wickra_screener_command(
             ptr::copy_nonoverlapping(bytes.as_ptr(), out.cast::<u8>(), len);
             *out.add(len) = 0;
         }
+    } else {
+        // Produced but not delivered: keep it for the call that reads it, so the
+        // command behind it runs exactly once.
+        state.pending = Some((cmd.to_string(), response));
     }
     i32::try_from(len).unwrap_or(i32::MAX)
 }
@@ -166,10 +206,128 @@ mod tests {
 
     const SPEC: &str = r#"{"universe":["AAA","BBB"],"condition":{"type":"cmp","left":{"kind":"price","field":"close"},"op":"gt","right":{"kind":"const","value":10.0}}}"#;
 
+    /// A spec whose condition carries a lookback. `SPEC` compares the close
+    /// against a constant, so it reads the same however many times a bar was
+    /// fed -- which is why the first version of the tests below passed with the
+    /// fix removed. `Sma(3)` over 10, 20, 30 is 20; fed twice each it is the
+    /// mean of 20, 30, 30, and the difference is the whole point.
+    const SPEC_WITH_HISTORY: &str = r#"{"universe":["AAA"],"condition":{"type":"cmp","left":{"kind":"indicator","name":"Sma","params":[3]},"op":"gt","right":{"kind":"const","value":0.0}}}"#;
+
+    /// One bar of the 10 / 20 / 30 ramp.
+    fn bar(time: i64, close: f64) -> String {
+        format!(
+            r#"{{"cmd":"feed","symbol":"AAA","candle":{{"time":{time},"open":{close},"high":{close},"low":{close},"close":{close},"volume":1.0}}}}"#
+        )
+    }
+
     /// Read a NUL-terminated buffer written by the command call as a `String`.
     fn read_buf(buf: &[u8]) -> String {
         let cstr = CStr::from_bytes_until_nul(buf).unwrap();
         cstr.to_str().unwrap().to_string()
+    }
+
+    /// Drive one command through the documented two-call idiom and return the
+    /// response: query the length with a null buffer, then read it.
+    fn two_call(handle: *mut WickraScreener, cmd: &str) -> String {
+        let cmd = CString::new(cmd).unwrap();
+        let len = unsafe { wickra_screener_command(handle, cmd.as_ptr(), ptr::null_mut(), 0) };
+        assert!(len >= 0, "length query failed: {len}");
+        let mut buf = vec![0u8; len as usize + 1];
+        let written = unsafe {
+            wickra_screener_command(handle, cmd.as_ptr(), buf.as_mut_ptr().cast(), buf.len())
+        };
+        assert_eq!(written, len);
+        read_buf(&buf)
+    }
+
+    /// The two-call idiom must apply a mutating command once, not twice.
+    ///
+    /// Every reach behind this ABI -- Go, C, C++, C#, Java, R -- asks for the
+    /// length first and reads second. The command used to run on both calls, so
+    /// each `feed` applied its candle twice and every indicator saw a doubled
+    /// history. `scan` hid it: it is a pure function of its payload, and the
+    /// golden corpus sends nothing else.
+    #[test]
+    fn a_mutating_command_runs_once_across_the_two_call_idiom() {
+        let spec = CString::new(SPEC_WITH_HISTORY).unwrap();
+        let handle = unsafe { wickra_screener_new(spec.as_ptr()) };
+        assert!(!handle.is_null());
+
+        for (time, close) in [(1i64, 10.0f64), (2, 20.0), (3, 30.0)] {
+            two_call(handle, &bar(time, close));
+        }
+        let via_two_call = two_call(handle, r#"{"cmd":"evaluate"}"#);
+
+        // Sma(3) over 10, 20, 30. Fed twice each it would be the mean of
+        // 20, 30, 30 instead, so the value is what distinguishes the two.
+        assert!(
+            via_two_call.contains("\"Sma(3)\":20.0"),
+            "expected Sma(3) = 20.0 from three bars, got: {via_two_call}"
+        );
+
+        unsafe { wickra_screener_free(handle) };
+    }
+
+    /// A buffer too small also produces a response that is not delivered. The
+    /// retry must read that body, not run the command a second time.
+    #[test]
+    fn a_too_small_buffer_does_not_rerun_the_command() {
+        let spec = CString::new(SPEC_WITH_HISTORY).unwrap();
+        let handle = unsafe { wickra_screener_new(spec.as_ptr()) };
+
+        for (time, close) in [(1i64, 10.0f64), (2, 20.0), (3, 30.0)] {
+            let cmd = CString::new(bar(time, close)).unwrap();
+            // One byte of capacity: the response cannot fit, so nothing is
+            // written and the caller must retry, exactly as the docs prescribe.
+            let mut tiny = [0u8; 1];
+            let len = unsafe {
+                wickra_screener_command(handle, cmd.as_ptr(), tiny.as_mut_ptr().cast(), tiny.len())
+            };
+            assert!(len >= 1, "response should be longer than the buffer");
+            let mut buf = vec![0u8; len as usize + 1];
+            let written = unsafe {
+                wickra_screener_command(handle, cmd.as_ptr(), buf.as_mut_ptr().cast(), buf.len())
+            };
+            assert_eq!(written, len);
+        }
+
+        let after_retries = two_call(handle, r#"{"cmd":"evaluate"}"#);
+        assert!(
+            after_retries.contains("\"Sma(3)\":20.0"),
+            "the truncation retry fed each candle a second time: {after_retries}"
+        );
+
+        unsafe { wickra_screener_free(handle) };
+    }
+
+    /// Moving to a different command abandons a queued body, so a later query
+    /// for the first one runs it again instead of serving a stale response.
+    #[test]
+    fn a_different_command_abandons_the_queued_response() {
+        let spec = CString::new(SPEC_WITH_HISTORY).unwrap();
+        let handle = unsafe { wickra_screener_new(spec.as_ptr()) };
+
+        for (time, close) in [(1i64, 10.0f64), (2, 20.0)] {
+            two_call(handle, &bar(time, close));
+        }
+
+        // Query the length of the third bar, then never read it. That call is a
+        // request to run it, so it runs -- once.
+        let third = CString::new(bar(3, 30.0)).unwrap();
+        let len = unsafe { wickra_screener_command(handle, third.as_ptr(), ptr::null_mut(), 0) };
+        assert!(len >= 0);
+
+        // A different command in between drops the queued body.
+        let version = two_call(handle, r#"{"cmd":"version"}"#);
+        assert!(version.contains("version"));
+
+        let after = two_call(handle, r#"{"cmd":"evaluate"}"#);
+        assert!(
+            after.contains("\"Sma(3)\":20.0"),
+            "the abandoned query should have fed the third bar exactly once: {after}"
+        );
+
+        unsafe { wickra_screener_free(handle) };
     }
 
     #[test]
