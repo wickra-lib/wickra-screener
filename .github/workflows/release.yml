@@ -39,7 +39,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-rust
-      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
 
       # Idempotent publishing: if the version is already on crates.io we treat
       # that as success so re-runs of the workflow do not fail.
@@ -117,7 +117,21 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      # The toolchain download flakes on the Windows runners often enough that a
+      # rerun with no code change is the standard fix. One retry costs half a
+      # minute; a failed job costs the whole matrix a rerun.
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        id: setup_python
+        continue-on-error: true
+        with:
+          python-version: "3.11"
+      - name: Pause before retrying the toolchain download
+        if: steps.setup_python.outcome == 'failure'
+        run: sleep 30
+        shell: bash
+      - name: Retry the toolchain download
+        if: steps.setup_python.outcome == 'failure'
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.11"
       - name: Sync root README into bindings/python so it ships with the wheel
@@ -198,13 +212,27 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      # The toolchain download flakes on the Windows runners often enough that a
+      # rerun with no code change is the standard fix. One retry costs half a
+      # minute; a failed job costs the whole matrix a rerun.
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        id: setup_node
+        continue-on-error: true
+        with:
+          node-version: "22"
+      - name: Pause before retrying the toolchain download
+        if: steps.setup_node.outcome == 'failure'
+        run: sleep 30
+        shell: bash
+      - name: Retry the toolchain download
+        if: steps.setup_node.outcome == 'failure'
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"
       - uses: ./.github/actions/setup-rust
         with:
           targets: ${{ matrix.target }}
-      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
       # npm install (not ci): the per-platform optionalDependencies are not yet
       # published, so they are absent from the lock and npm ci would reject it.
       - name: Install Node deps
@@ -232,7 +260,22 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      # The toolchain download flakes on the Windows runners often enough that a
+      # rerun with no code change is the standard fix. One retry costs half a
+      # minute; a failed job costs the whole matrix a rerun.
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        id: setup_node
+        continue-on-error: true
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+      - name: Pause before retrying the toolchain download
+        if: steps.setup_node.outcome == 'failure'
+        run: sleep 30
+        shell: bash
+      - name: Retry the toolchain download
+        if: steps.setup_node.outcome == 'failure'
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"
           registry-url: "https://registry.npmjs.org"
@@ -348,14 +391,29 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      # The toolchain download flakes on the Windows runners often enough that a
+      # rerun with no code change is the standard fix. One retry costs half a
+      # minute; a failed job costs the whole matrix a rerun.
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        id: setup_node
+        continue-on-error: true
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+      - name: Pause before retrying the toolchain download
+        if: steps.setup_node.outcome == 'failure'
+        run: sleep 30
+        shell: bash
+      - name: Retry the toolchain download
+        if: steps.setup_node.outcome == 'failure'
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"
           registry-url: "https://registry.npmjs.org"
       - uses: ./.github/actions/setup-rust
         with:
           targets: wasm32-unknown-unknown
-      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
       - name: Install wasm-pack (latest, via prebuilt binary)
         uses: taiki-e/install-action@3d7d7cd5ac7f994c1892ae0c06165095b9139094 # v2.85.1
         with:
@@ -417,7 +475,7 @@ jobs:
       - uses: ./.github/actions/setup-rust
         with:
           targets: ${{ matrix.target }}
-      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
       - name: Build the CLI binary
         run: cargo build -p wickra-screener --release --target ${{ matrix.target }}
       - name: Package the binary
@@ -466,7 +524,7 @@ jobs:
       - uses: ./.github/actions/setup-rust
         with:
           targets: ${{ matrix.target }}
-      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
       - name: Build the C ABI library (cdylib + staticlib)
         run: cargo build -p wickra-screener-c --release --target ${{ matrix.target }}
       - name: Package header + libraries
