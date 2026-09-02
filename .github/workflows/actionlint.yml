@@ -1,0 +1,35 @@
+name: actionlint
+
+# Static analysis of the workflow files as workflows: unknown keys, bad
+# `runs-on` labels, expressions that cannot evaluate, shell syntax inside `run`
+# blocks. zizmor covers the security surface of the same files; this covers
+# whether they are valid at all.
+#
+# A workflow that is merely wrong rather than insecure fails at dispatch time,
+# which on the release workflow means finding out at the tag.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  actionlint:
+    name: Lint workflows
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # actionlint shells out to shellcheck for `run:` blocks when it is
+      # present; the ubuntu runner ships it, so this needs no install step.
+      - name: Run actionlint
+        uses: docker://rhysd/actionlint@sha256:887a259a5a534f3c4f36cb02dca341673c6089431057242cdc931e9f133147e9 # v1.7.7
+        with:
+          args: -color
