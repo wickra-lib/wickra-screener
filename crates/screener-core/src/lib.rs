@@ -18,6 +18,7 @@ mod config;
 mod error;
 mod eval;
 mod expr;
+mod feeds;
 mod indicator_set;
 mod scan;
 mod screener;
@@ -28,6 +29,7 @@ mod universe;
 pub use config::Config;
 pub use error::{Error, Result};
 pub use expr::{Expr, PriceField};
+pub use feeds::{FeedKind, SymbolInput, SymbolSeries};
 pub use scan::{scan_batch, ScanReport, ScanResult};
 pub use screener::Screener;
 pub use spec::{Comparator, Condition, CsMetric, RankSpec, ScanSpec};
@@ -35,6 +37,17 @@ pub use spec::{Comparator, Condition, CsMetric, RankSpec, ScanSpec};
 // The candle type consumers feed and scan with (the backtester's OHLCV bar,
 // which the registry indicators are driven by).
 pub use wickra_backtest_core::Candle;
+
+// The side-feed documents a scan supplies alongside the candles, re-exported so
+// a caller does not have to depend on the backtester to name them.
+pub use wickra_backtest_core::{
+    CrossSection, CrossSectionMember, DerivativesTick, Level, OrderBook, StepFeeds, TradePrint,
+    TradeSide,
+};
+
+/// Which feed an indicator consumes, or `None` if the registry does not know the
+/// name. Lets a caller check a spec's needs before assembling a dataset.
+pub use indicator_set::feed_kind;
 
 /// The screener-core version string.
 #[must_use]

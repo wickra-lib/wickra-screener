@@ -100,6 +100,7 @@ fn point_compare(a: f64, op: Comparator, b: f64) -> bool {
 mod tests {
     use super::*;
     use crate::expr::PriceField;
+    use crate::feeds::BarFeeds;
     use crate::spec::{CsMetric, ScanSpec};
     use wickra_backtest_core::Candle;
 
@@ -136,7 +137,7 @@ mod tests {
         let mut u = Universe::new();
         for (sym, c) in [("A", 10.0), ("B", 20.0), ("C", 30.0)] {
             u.ensure(sym, &s).unwrap();
-            u.fold(sym, &candle(c));
+            u.fold(sym, &candle(c), BarFeeds::default());
         }
         u
     }
@@ -224,9 +225,9 @@ mod tests {
         let s = spec(cond.clone());
         let mut u = Universe::new();
         u.ensure("A", &s).unwrap();
-        u.fold("A", &candle(10.0)); // below 15
+        u.fold("A", &candle(10.0), BarFeeds::default()); // below 15
         assert!(!eval_condition(&cond, "A", &u)); // no prev cross yet? prev==None first bar
-        u.fold("A", &candle(20.0)); // above 15
+        u.fold("A", &candle(20.0), BarFeeds::default()); // above 15
         assert!(eval_condition(&cond, "A", &u)); // prev 10<=15, cur 20>15
     }
 
@@ -240,9 +241,9 @@ mod tests {
         let s = spec(cond.clone());
         let mut u = Universe::new();
         u.ensure("A", &s).unwrap();
-        u.fold("A", &candle(20.0)); // above 15
+        u.fold("A", &candle(20.0), BarFeeds::default()); // above 15
         assert!(!eval_condition(&cond, "A", &u));
-        u.fold("A", &candle(10.0)); // below -> crosses below
+        u.fold("A", &candle(10.0), BarFeeds::default()); // below -> crosses below
         assert!(eval_condition(&cond, "A", &u));
     }
 }

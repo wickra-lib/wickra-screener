@@ -7,7 +7,7 @@
 
 use std::collections::BTreeMap;
 
-use screener_core::{scan_batch, Candle, ScanSpec};
+use screener_core::{scan_batch, Candle, ScanSpec, SymbolInput};
 
 const SPEC: &str = r#"{
     "universe": ["AAA", "BBB"],
@@ -33,11 +33,11 @@ fn candle(close: f64) -> Candle {
 fn main() {
     let spec: ScanSpec = ScanSpec::from_json(SPEC).expect("valid spec");
 
-    let mut data = BTreeMap::new();
-    data.insert("AAA".to_string(), vec![candle(5.0)]);
-    data.insert("BBB".to_string(), vec![candle(15.0)]);
+    let mut data: BTreeMap<String, SymbolInput> = BTreeMap::new();
+    data.insert("AAA".to_string(), vec![candle(5.0)].into());
+    data.insert("BBB".to_string(), vec![candle(15.0)].into());
 
-    let report = scan_batch(&data, &spec).expect("scan");
+    let report = scan_batch(data, &spec).expect("scan");
 
     println!("wickra-screener {}", screener_core::version());
     println!(

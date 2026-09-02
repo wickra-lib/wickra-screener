@@ -3,6 +3,8 @@
 
 use crate::error::{Error, Result};
 use crate::expr::Expr;
+use crate::feeds::{Available, FeedKind};
+use crate::indicator_set::feed_kind;
 use serde::{Deserialize, Serialize};
 
 /// How two scalar values are compared.
@@ -142,6 +144,82 @@ impl ScanSpec {
             return Err(Error::BadSpec("limit must be greater than 0".into()));
         }
         check_breadth_nesting(&self.condition)
+    }
+
+    /// Visit every expression the spec references — the whole condition tree plus
+    /// the ranking expression — short-circuiting on the first error.
+    pub(crate) fn visit_exprs<F>(&self, visit: &mut F) -> Result<()>
+    where
+        F: FnMut(&Expr) -> Result<()>,
+    {
+        visit_exprs(&self.condition, visit)?;
+        match &self.rank {
+            Some(rank) => visit(&rank.by),
+            None => Ok(()),
+        }
+    }
+
+    /// Reject the spec if it names an indicator whose feed the scan cannot
+    /// supply.
+    ///
+    /// An indicator without its feed is not an error inside `wickra-core`: it
+    /// ticks and returns `None`, on this bar and every later one. A screen built
+    /// on it would run to completion and match nothing, which reads exactly like
+    /// a screen whose condition was simply never true. Refusing the spec is what
+    /// separates the two.
+    pub(crate) fn check_feeds(&self, available: Available) -> Result<()> {
+        self.visit_exprs(&mut |expr| {
+            let Expr::Indicator { name, .. } = expr else {
+                return Ok(());
+            };
+            let kind = feed_kind(name).ok_or_else(|| Error::UnknownIndicator(name.clone()))?;
+            if available.has(kind) {
+                return Ok(());
+            }
+            Err(Error::MissingFeed {
+                indicator: name.clone(),
+                feed: kind.as_str().to_string(),
+            })
+        })
+    }
+
+    /// The feed families this spec's indicators need beyond the candle.
+    #[must_use]
+    pub fn required_feeds(&self) -> Vec<FeedKind> {
+        let mut kinds: Vec<FeedKind> = Vec::new();
+        let _ = self.visit_exprs(&mut |expr| {
+            if let Expr::Indicator { name, .. } = expr {
+                if let Some(kind) = feed_kind(name) {
+                    if kind != FeedKind::Candle && !kinds.contains(&kind) {
+                        kinds.push(kind);
+                    }
+                }
+            }
+            Ok(())
+        });
+        kinds
+    }
+}
+
+/// Visit every expression in a condition tree, short-circuiting on error.
+pub(crate) fn visit_exprs<F>(cond: &Condition, visit: &mut F) -> Result<()>
+where
+    F: FnMut(&Expr) -> Result<()>,
+{
+    match cond {
+        Condition::Cmp { left, right, .. } => {
+            visit(left)?;
+            visit(right)
+        }
+        Condition::CrossSection { expr, .. } => visit(expr),
+        Condition::Breadth { inner, .. } => visit_exprs(inner, visit),
+        Condition::All { conditions } | Condition::Any { conditions } => {
+            for c in conditions {
+                visit_exprs(c, visit)?;
+            }
+            Ok(())
+        }
+        Condition::Not { condition } => visit_exprs(condition, visit),
     }
 }
 

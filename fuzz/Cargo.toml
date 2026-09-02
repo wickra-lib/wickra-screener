@@ -46,3 +46,10 @@ path = "fuzz_targets/symbol_fold.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "feed_payload"
+path = "fuzz_targets/feed_payload.rs"
+test = false
+doc = false
+bench = false

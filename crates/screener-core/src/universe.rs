@@ -4,6 +4,7 @@
 
 use crate::error::Result;
 use crate::expr::Expr;
+use crate::feeds::BarFeeds;
 use crate::spec::{CsMetric, ScanSpec};
 use crate::symbol_state::SymbolState;
 use std::cmp::Ordering;
@@ -34,10 +35,10 @@ impl Universe {
         Ok(())
     }
 
-    /// Fold one candle into a symbol's state (no-op if the symbol is absent).
-    pub(crate) fn fold(&mut self, sym: &str, candle: &Candle) {
+    /// Fold one bar into a symbol's state (no-op if the symbol is absent).
+    pub(crate) fn fold(&mut self, sym: &str, candle: &Candle, feeds: BarFeeds<'_>) {
         if let Some(state) = self.symbols.get_mut(sym) {
-            state.fold(candle);
+            state.fold(candle, feeds);
         }
     }
 
@@ -161,7 +162,7 @@ mod tests {
         let mut u = Universe::new();
         for (sym, close) in [("A", 10.0), ("B", 20.0), ("C", 30.0)] {
             u.ensure(sym, &spec).unwrap();
-            u.fold(sym, &candle(close));
+            u.fold(sym, &candle(close), BarFeeds::default());
         }
         u
     }
@@ -213,7 +214,7 @@ mod tests {
         let mut u = Universe::new();
         for (sym, close) in [("A", 30.0), ("B", 30.0), ("C", 10.0)] {
             u.ensure(sym, &spec).unwrap();
-            u.fold(sym, &candle(close));
+            u.fold(sym, &candle(close), BarFeeds::default());
         }
         let close = Expr::Price {
             field: PriceField::Close,

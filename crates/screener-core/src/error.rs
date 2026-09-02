@@ -15,6 +15,31 @@ pub enum Error {
     /// The universe data was missing or malformed.
     #[error("data: {0}")]
     Data(String),
+    /// A side feed did not have one entry per candle.
+    #[error("{symbol}: {feed} feed length {len} does not match {candles} candles")]
+    FeedLength {
+        /// The symbol whose series is mismatched.
+        symbol: String,
+        /// The feed array that is the wrong length.
+        feed: String,
+        /// The length supplied.
+        len: usize,
+        /// The candle count it has to match.
+        candles: usize,
+    },
+    /// A side feed entry could not be converted to the type indicators consume.
+    #[error("feed: {0}")]
+    Feed(String),
+    /// The spec names an indicator whose feed the scan does not supply. Without
+    /// the feed the indicator would tick and return nothing on every bar, so the
+    /// screen would silently never match; saying so is the point of this error.
+    #[error("indicator {indicator} needs the {feed} feed, which this scan does not supply")]
+    MissingFeed {
+        /// The indicator the spec names.
+        indicator: String,
+        /// The feed family it consumes.
+        feed: String,
+    },
 }
 
 /// Convenience result alias for the screener core.

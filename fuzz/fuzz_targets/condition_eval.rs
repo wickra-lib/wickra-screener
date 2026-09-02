@@ -7,7 +7,7 @@
 use std::collections::BTreeMap;
 
 use libfuzzer_sys::fuzz_target;
-use screener_core::{scan_batch, Candle, ScanSpec};
+use screener_core::{scan_batch, Candle, ScanSpec, SymbolInput};
 
 fuzz_target!(|data: &[u8]| {
     let Ok(text) = std::str::from_utf8(data) else {
@@ -16,7 +16,7 @@ fuzz_target!(|data: &[u8]| {
     let Ok(spec) = ScanSpec::from_json(text) else {
         return;
     };
-    let mut universe = BTreeMap::new();
+    let mut universe: BTreeMap<String, SymbolInput> = BTreeMap::new();
     for sym in ["s0", "s1", "s2"] {
         let candles: Vec<Candle> = (0i64..40)
             .map(|i| {
@@ -31,7 +31,7 @@ fuzz_target!(|data: &[u8]| {
                 }
             })
             .collect();
-        universe.insert(sym.to_string(), candles);
+        universe.insert(sym.to_string(), candles.into());
     }
-    let _ = scan_batch(&universe, &spec);
+    let _ = scan_batch(universe, &spec);
 });

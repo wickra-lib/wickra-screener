@@ -2,12 +2,13 @@
 //! entry point exposed in every language binding (§6.9).
 
 use crate::error::{Error, Result};
+use crate::feeds::{BarFeeds, OwnedBarFeeds, SymbolInput};
 use crate::scan::{evaluate_universe, scan_batch, ScanReport};
 use crate::spec::ScanSpec;
 use crate::universe::Universe;
 use serde_json::{json, Value};
 use std::collections::BTreeMap;
-use wickra_backtest_core::Candle;
+use wickra_backtest_core::{Candle, StepFeeds};
 
 /// A screener over a fixed spec, holding a streaming universe of fed candles.
 pub struct Screener {
@@ -40,8 +41,34 @@ impl Screener {
 
     /// Feed one candle for a symbol into the streaming universe.
     pub fn feed(&mut self, symbol: &str, candle: &Candle) -> Result<()> {
+        self.feed_bar(symbol, candle, BarFeeds::default())
+    }
+
+    /// Feed one bar for a symbol along with that bar's side feeds.
+    ///
+    /// Takes the same [`StepFeeds`] document the `feed` command carries, so the
+    /// Rust and JSON paths describe a bar the same way.
+    pub fn feed_step(&mut self, symbol: &str, candle: &Candle, feeds: StepFeeds) -> Result<()> {
+        let owned = OwnedBarFeeds::build(symbol, feeds)?;
+        self.feed_bar(symbol, candle, owned.as_bar())
+    }
+
+    /// Feed one bar with its already-converted side feeds.
+    ///
+    /// The feeds are checked against what the spec's indicators consume, per
+    /// bar. That is the only place a streaming caller can be checked — a batch
+    /// scan knows the whole series up front, but here the bars arrive one at a
+    /// time — and the standard is the same either way: an indicator that needs a
+    /// book needs one on every bar, not merely on some.
+    pub(crate) fn feed_bar(
+        &mut self,
+        symbol: &str,
+        candle: &Candle,
+        feeds: BarFeeds<'_>,
+    ) -> Result<()> {
+        self.spec.check_feeds(feeds.available())?;
         self.universe.ensure(symbol, &self.spec)?;
-        self.universe.fold(symbol, candle);
+        self.universe.fold(symbol, candle, feeds);
         Ok(())
     }
 
@@ -79,22 +106,26 @@ impl Screener {
             "feed" => {
                 let symbol = str_field(&value, "symbol")?.to_string();
                 let candle: Candle = serde_json::from_value(field(&value, "candle")?)?;
-                self.feed(&symbol, &candle)?;
+                let feeds = step_feeds(&value)?;
+                let owned = OwnedBarFeeds::build(&symbol, feeds)?;
+                self.feed_bar(&symbol, &candle, owned.as_bar())?;
                 Ok(ok_json())
             }
             "feed_batch" => {
                 let symbol = str_field(&value, "symbol")?.to_string();
                 let candles: Vec<Candle> = serde_json::from_value(field(&value, "candles")?)?;
+                let feeds = step_feeds(&value)?;
+                let owned = OwnedBarFeeds::build(&symbol, feeds)?;
                 for candle in &candles {
-                    self.feed(&symbol, candle)?;
+                    self.feed_bar(&symbol, candle, owned.as_bar())?;
                 }
                 Ok(ok_json())
             }
             "evaluate" => Ok(serde_json::to_string(&self.evaluate())?),
             "scan" => {
-                let data: BTreeMap<String, Vec<Candle>> =
+                let data: BTreeMap<String, SymbolInput> =
                     serde_json::from_value(field(&value, "data")?)?;
-                Ok(serde_json::to_string(&scan_batch(&data, &self.spec)?)?)
+                Ok(serde_json::to_string(&scan_batch(data, &self.spec)?)?)
             }
             "reset" => {
                 self.reset();
@@ -112,6 +143,14 @@ fn field(value: &Value, name: &str) -> Result<Value> {
         .get(name)
         .cloned()
         .ok_or_else(|| Error::BadSpec(format!("missing \"{name}\"")))
+}
+
+/// Read the optional per-bar side feeds out of a streaming command envelope.
+fn step_feeds(value: &Value) -> Result<StepFeeds> {
+    match value.get("feeds") {
+        Some(feeds) => Ok(serde_json::from_value(feeds.clone())?),
+        None => Ok(StepFeeds::default()),
+    }
 }
 
 /// Read a named string field out of the envelope.

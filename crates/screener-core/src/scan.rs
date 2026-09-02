@@ -4,13 +4,13 @@
 use crate::error::Result;
 use crate::eval::eval_condition;
 use crate::expr::Expr;
+use crate::feeds::{CoreSeries, SymbolInput};
 use crate::spec::{Condition, CsMetric, ScanSpec};
 use crate::symbol_state::SymbolState;
 use crate::universe::Universe;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
-use wickra_backtest_core::Candle;
 
 /// One symbol's scan outcome: the values that drove the match and an optional
 /// ranking score.
@@ -45,17 +45,44 @@ fn round_to(x: f64) -> f64 {
     (x * 1e8).round() / 1e8
 }
 
-/// Scan a universe of candle series against a spec.
+/// Scan a universe against a spec.
 ///
-/// Validates the spec, folds every symbol over its full history (in parallel
-/// with the `parallel` feature, sequentially otherwise — byte-identical),
-/// evaluates the condition at the last bar, collects the match reasons and
-/// ranking score, then sorts and limits the matches.
-pub fn scan_batch(data: &BTreeMap<String, Vec<Candle>>, spec: &ScanSpec) -> Result<ScanReport> {
+/// Each symbol's input is either a bare candle array or a [`SymbolSeries`] with
+/// the side feeds its indicators need. The spec is validated, every feed array
+/// is checked to be as long as the candle array and converted once, and a spec
+/// naming an indicator whose feed a symbol does not supply is rejected — an
+/// unsupplied feed would otherwise make that indicator return nothing on every
+/// bar and the screen match nothing at all, indistinguishably from a condition
+/// that was simply never true.
+///
+/// Every symbol is then folded over its full history (in parallel with the
+/// `parallel` feature, sequentially otherwise — byte-identical), the condition
+/// is evaluated at the last bar, the match reasons and ranking score are
+/// collected, and the matches are sorted and limited.
+///
+/// [`SymbolSeries`]: crate::SymbolSeries
+pub fn scan_batch(data: BTreeMap<String, SymbolInput>, spec: &ScanSpec) -> Result<ScanReport> {
     spec.validate()?;
+    let scanned = data.len();
+    let series = ingest(data, spec)?;
     let mut universe = Universe::new();
-    universe.symbols = folded_states(data, spec)?;
-    Ok(evaluate_universe(&universe, spec, data.len()))
+    universe.symbols = folded_states(&series, spec)?;
+    Ok(evaluate_universe(&universe, spec, scanned))
+}
+
+/// Validate and convert every symbol's input, rejecting a symbol whose feeds do
+/// not cover what the spec's indicators consume.
+fn ingest(
+    data: BTreeMap<String, SymbolInput>,
+    spec: &ScanSpec,
+) -> Result<BTreeMap<String, CoreSeries>> {
+    let mut out = BTreeMap::new();
+    for (symbol, input) in data {
+        let series = CoreSeries::build(&symbol, input.into_series())?;
+        spec.check_feeds(series.available())?;
+        out.insert(symbol, series);
+    }
+    Ok(out)
 }
 
 /// Evaluate an already-folded universe against the spec: filter matches, collect
@@ -99,13 +126,13 @@ pub(crate) fn evaluate_universe(
 /// Build a fully-folded state per symbol, in parallel with rayon.
 #[cfg(feature = "parallel")]
 fn folded_states(
-    data: &BTreeMap<String, Vec<Candle>>,
+    data: &BTreeMap<String, CoreSeries>,
     spec: &ScanSpec,
 ) -> Result<BTreeMap<String, SymbolState>> {
     use rayon::prelude::*;
     let built: Vec<Result<(String, SymbolState)>> = data
         .par_iter()
-        .map(|(symbol, candles)| Ok((symbol.clone(), fold_symbol(candles, spec)?)))
+        .map(|(symbol, series)| Ok((symbol.clone(), fold_symbol(series, spec)?)))
         .collect();
     let mut states = BTreeMap::new();
     for entry in built {
@@ -118,21 +145,21 @@ fn folded_states(
 /// Build a fully-folded state per symbol, sequentially (the WASM fallback).
 #[cfg(not(feature = "parallel"))]
 fn folded_states(
-    data: &BTreeMap<String, Vec<Candle>>,
+    data: &BTreeMap<String, CoreSeries>,
     spec: &ScanSpec,
 ) -> Result<BTreeMap<String, SymbolState>> {
     let mut states = BTreeMap::new();
-    for (symbol, candles) in data {
-        states.insert(symbol.clone(), fold_symbol(candles, spec)?);
+    for (symbol, series) in data {
+        states.insert(symbol.clone(), fold_symbol(series, spec)?);
     }
     Ok(states)
 }
 
-/// Fold one symbol's candle history into a ready state.
-fn fold_symbol(candles: &[Candle], spec: &ScanSpec) -> Result<SymbolState> {
+/// Fold one symbol's history, bar and feeds together, into a ready state.
+fn fold_symbol(series: &CoreSeries, spec: &ScanSpec) -> Result<SymbolState> {
     let mut state = SymbolState::new(spec)?;
-    for candle in candles {
-        state.fold(candle);
+    for (index, candle) in series.candles.iter().enumerate() {
+        state.fold(candle, series.bar(index));
     }
     Ok(state)
 }
@@ -222,6 +249,7 @@ mod tests {
     use super::*;
     use crate::expr::PriceField;
     use crate::spec::{Comparator, RankSpec};
+    use wickra_backtest_core::Candle;
 
     fn candle(close: f64) -> Candle {
         Candle {
@@ -244,11 +272,11 @@ mod tests {
         (a - b).abs() < 1e-9
     }
 
-    fn data() -> BTreeMap<String, Vec<Candle>> {
+    fn data() -> BTreeMap<String, SymbolInput> {
         BTreeMap::from([
-            ("A".to_string(), vec![candle(10.0)]),
-            ("B".to_string(), vec![candle(20.0)]),
-            ("C".to_string(), vec![candle(30.0)]),
+            ("A".to_string(), vec![candle(10.0)].into()),
+            ("B".to_string(), vec![candle(20.0)].into()),
+            ("C".to_string(), vec![candle(30.0)].into()),
         ])
     }
 
@@ -272,7 +300,7 @@ mod tests {
             }),
             limit: Some(2),
         };
-        let report = scan_batch(&data(), &spec).unwrap();
+        let report = scan_batch(data(), &spec).unwrap();
         assert_eq!(report.scanned, 3);
         assert_eq!(report.matches.len(), 2);
         assert_eq!(report.matches[0].symbol, "C");
@@ -290,7 +318,7 @@ mod tests {
             rank: None,
             limit: None,
         };
-        let report = scan_batch(&data(), &spec).unwrap();
+        let report = scan_batch(data(), &spec).unwrap();
         assert_eq!(report.matches.len(), 2);
         assert_eq!(report.matches[0].symbol, "B");
         assert_eq!(report.matches[1].symbol, "C");
@@ -311,7 +339,7 @@ mod tests {
             rank: None,
             limit: None,
         };
-        let report = scan_batch(&data(), &spec).unwrap();
+        let report = scan_batch(data(), &spec).unwrap();
         assert_eq!(report.matches.len(), 1);
         assert_eq!(report.matches[0].symbol, "C");
         assert!(approx(report.matches[0].values["price.close#rank"], 1.0));
@@ -326,17 +354,17 @@ mod tests {
             rank: None,
             limit: None,
         };
-        let report = scan_batch(&data(), &spec).unwrap();
+        let report = scan_batch(data(), &spec).unwrap();
         let json = serde_json::to_string(&report).unwrap();
         assert_eq!(serde_json::from_str::<ScanReport>(&json).unwrap(), report);
     }
 
     #[test]
     fn score_ties_break_by_symbol() {
-        let data = BTreeMap::from([
-            ("A".to_string(), vec![candle(20.0)]),
-            ("B".to_string(), vec![candle(20.0)]),
-            ("C".to_string(), vec![candle(30.0)]),
+        let data: BTreeMap<String, SymbolInput> = BTreeMap::from([
+            ("A".to_string(), vec![candle(20.0)].into()),
+            ("B".to_string(), vec![candle(20.0)].into()),
+            ("C".to_string(), vec![candle(30.0)].into()),
         ]);
         let spec = ScanSpec {
             universe: vec!["A".into(), "B".into(), "C".into()],
@@ -348,7 +376,7 @@ mod tests {
             }),
             limit: None,
         };
-        let report = scan_batch(&data, &spec).unwrap();
+        let report = scan_batch(data, &spec).unwrap();
         assert_eq!(report.matches.len(), 3);
         assert_eq!(report.matches[0].symbol, "C"); // 30
         assert_eq!(report.matches[1].symbol, "A"); // 20, tie -> A before B
@@ -364,8 +392,8 @@ mod tests {
             rank: None,
             limit: None,
         };
-        let first = scan_batch(&data(), &spec).unwrap();
-        let second = scan_batch(&data(), &spec).unwrap();
+        let first = scan_batch(data(), &spec).unwrap();
+        let second = scan_batch(data(), &spec).unwrap();
         assert_eq!(
             serde_json::to_string(&first).unwrap(),
             serde_json::to_string(&second).unwrap()

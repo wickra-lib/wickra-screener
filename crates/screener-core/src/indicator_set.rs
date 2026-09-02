@@ -3,14 +3,70 @@
 //! Indicators are resolved by name and parameters from the `wickra-core`
 //! registry — reused through the `wickra-backtest-core` factory, the only
 //! name -> indicator resolver in the ecosystem. Each resolved indicator is an
-//! object-safe `EvalIndicator`; the screener drives it with a candle-only
-//! [`BarInput`] (no reference series, derivatives, order book or trades).
+//! object-safe `EvalIndicator`, driven with a [`BarInput`] built from the bar's
+//! candle and whatever side feeds the scan supplies.
 
 use crate::error::{Error, Result};
 use crate::expr::Expr;
+use crate::feeds::{BarFeeds, FeedKind};
 use std::collections::BTreeMap;
-use wickra_backtest_core::registry::{build, BarInput};
+use wickra_backtest_core::registry::{build, feed_of, BarInput};
+use wickra_backtest_core::spec::Feed;
 use wickra_backtest_core::{Candle, EvalIndicator};
+
+/// The pairwise indicators, which read the reference series' close alongside the
+/// bar close.
+///
+/// This list exists because `registry::feed_of` cannot express the family:
+/// upstream classifies every pairwise indicator as `Feed::Kline`, since the
+/// candle is indeed one of its two inputs. The `pairwise_list_matches_behaviour`
+/// test probes every registry name and fails if this list ever drifts from the
+/// set that actually needs a reference, so a registry that grows a new pairwise
+/// indicator cannot slip past silently.
+const PAIRWISE: [&str; 24] = [
+    "Alpha",
+    "Beta",
+    "BetaNeutralSpread",
+    "Cointegration",
+    "DistanceSsd",
+    "GrangerCausality",
+    "HasbrouckInformationShare",
+    "InformationRatio",
+    "KalmanHedgeRatio",
+    "KendallTau",
+    "LeadLagCrossCorrelation",
+    "OuHalfLife",
+    "PairSpreadZScore",
+    "PairwiseBeta",
+    "PearsonCorrelation",
+    "RelativeStrengthAB",
+    "RollingCorrelation",
+    "RollingCovariance",
+    "SpearmanCorrelation",
+    "SpreadAr1Coefficient",
+    "SpreadBollingerBands",
+    "SpreadHurst",
+    "TreynorRatio",
+    "VarianceRatio",
+];
+
+/// Which feed an indicator consumes, or `None` if the registry does not know it.
+///
+/// Wraps `registry::feed_of` and refines its `Kline` answer with the pairwise
+/// list, so a caller can tell "candle is enough" from "needs a reference".
+#[must_use]
+pub fn feed_kind(name: &str) -> Option<FeedKind> {
+    let feed = feed_of(name)?;
+    Some(match feed {
+        Feed::Kline if PAIRWISE.contains(&name) => FeedKind::Pair,
+        Feed::Kline => FeedKind::Candle,
+        Feed::Trade => FeedKind::Trades,
+        Feed::Orderbook => FeedKind::OrderBook,
+        Feed::TradeQuote => FeedKind::TradeQuote,
+        Feed::Derivatives => FeedKind::Derivatives,
+        Feed::CrossSection => FeedKind::CrossSection,
+    })
+}
 
 /// One resolved indicator plus its canonical base key (`<name>(<p,p>)`).
 struct Entry {
@@ -52,17 +108,18 @@ impl IndicatorSet {
         Ok(())
     }
 
-    /// Fold one candle: `prev` becomes the previous `cur`, then every indicator
-    /// ticks and records its primary value and named fields into `cur`.
-    pub(crate) fn update(&mut self, candle: &Candle) {
+    /// Fold one bar: `prev` becomes the previous `cur`, then every indicator
+    /// ticks against the candle and the bar's feeds and records its primary
+    /// value and named fields into `cur`.
+    pub(crate) fn update(&mut self, candle: &Candle, feeds: BarFeeds<'_>) {
         self.prev = std::mem::take(&mut self.cur);
         let bar = BarInput {
             candle,
-            reference: None,
-            deriv: None,
-            orderbook: None,
-            trades: &[],
-            cross_section: None,
+            reference: feeds.reference,
+            deriv: feeds.deriv,
+            orderbook: feeds.orderbook,
+            trades: feeds.trades,
+            cross_section: feeds.cross_section,
         };
         for entry in &mut self.items {
             if let Some(value) = entry.indicator.update(&bar) {
@@ -109,6 +166,7 @@ fn base_key(name: &str, params: &[f64]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::feeds::BarFeeds;
 
     fn candle(close: f64) -> Candle {
         Candle {
@@ -133,7 +191,7 @@ mod tests {
         assert!(set.max_warmup() > 0);
 
         for c in [1.0, 2.0, 3.0, 4.0, 5.0] {
-            set.update(&candle(c));
+            set.update(&candle(c), BarFeeds::default());
         }
         // 3-bar SMA of the last three closes; prev is the previous window.
         assert_eq!(set.cur("Sma(3)"), Some(4.0));
@@ -151,5 +209,73 @@ mod tests {
             }),
             Err(Error::UnknownIndicator(_))
         ));
+    }
+
+    #[test]
+    fn a_pairwise_indicator_produces_a_value_once_a_reference_arrives() {
+        let mut set = IndicatorSet::new();
+        set.required(&Expr::Indicator {
+            name: "RollingCorrelation".into(),
+            params: vec![5.0],
+            field: None,
+        })
+        .unwrap();
+
+        // Without a reference the indicator ticks and yields nothing, every bar.
+        for i in 0..40 {
+            set.update(&candle(100.0 + f64::from(i)), BarFeeds::default());
+        }
+        assert_eq!(set.cur("RollingCorrelation(5)"), None);
+
+        // With one it produces a value.
+        let mut set = IndicatorSet::new();
+        set.required(&Expr::Indicator {
+            name: "RollingCorrelation".into(),
+            params: vec![5.0],
+            field: None,
+        })
+        .unwrap();
+        for i in 0..40 {
+            let t = f64::from(i);
+            let feeds = BarFeeds {
+                reference: Some(50.0 + (t * 0.5).sin() * 5.0),
+                ..BarFeeds::default()
+            };
+            set.update(&candle(100.0 + (t * 0.3).sin() * 10.0), feeds);
+        }
+        assert!(set.cur("RollingCorrelation(5)").is_some());
+    }
+
+    #[test]
+    fn feed_kind_classifies_each_family() {
+        assert_eq!(feed_kind("Rsi"), Some(FeedKind::Candle));
+        assert_eq!(feed_kind("Beta"), Some(FeedKind::Pair));
+        assert_eq!(feed_kind("Cointegration"), Some(FeedKind::Pair));
+        assert_eq!(feed_kind("FundingRate"), Some(FeedKind::Derivatives));
+        assert_eq!(feed_kind("Microprice"), Some(FeedKind::OrderBook));
+        assert_eq!(feed_kind("Vpin"), Some(FeedKind::Trades));
+        assert_eq!(feed_kind("EffectiveSpread"), Some(FeedKind::TradeQuote));
+        assert_eq!(feed_kind("AdvanceDecline"), Some(FeedKind::CrossSection));
+        assert_eq!(feed_kind("NotAnIndicator"), None);
+    }
+
+    #[test]
+    fn pairwise_list_is_sorted_and_unique() {
+        let mut sorted = PAIRWISE;
+        sorted.sort_unstable();
+        assert_eq!(sorted, PAIRWISE, "keep PAIRWISE sorted for reviewability");
+        let mut seen = std::collections::BTreeSet::new();
+        assert!(PAIRWISE.iter().all(|n| seen.insert(*n)));
+    }
+
+    #[test]
+    fn every_pairwise_name_is_a_registry_name_classified_as_kline() {
+        for name in PAIRWISE {
+            assert_eq!(
+                feed_of(name),
+                Some(Feed::Kline),
+                "{name} is not a Kline-classified registry name"
+            );
+        }
     }
 }

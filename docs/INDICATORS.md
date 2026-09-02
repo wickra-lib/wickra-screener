@@ -1,9 +1,15 @@
 # Indicators
 
 An `indicator` expression resolves to the output of a [Wickra](https://github.com/wickra-lib/wickra)
-streaming indicator, computed over each symbol's candle history and read at the
+streaming indicator, computed over each symbol's history and read at the
 evaluated bar. Screener does not reimplement any indicator — it drives the shared
-registry, so all 514 O(1) streaming indicators are available to a scan.
+registry.
+
+Most indicators are driven by the candle alone. The rest read a **side feed**:
+a reference series, a derivatives tick, an order-book snapshot, the bar's trades,
+or the market cross-section. Supply the feed and the indicator works like any
+other; leave it out and the spec is **refused**, naming the feed it needs — see
+[Data input](#data-input) below.
 
 ## Referencing an indicator
 
@@ -48,9 +54,43 @@ Provide enough history per symbol for the longest window your spec references.
 
 ## Data input
 
-Indicators consume `Candle { time, open, high, low, close, volume }`. The CLI
-reads them from per-symbol CSV files (`<SYMBOL>.csv`) or a JSON dataset on stdin;
-the bindings pass candles as JSON in the `command` payload.
+Every indicator consumes `Candle { time, open, high, low, close, volume }`. Some
+also consume one side feed:
+
+| Feed | Payload field | Families that need it |
+|------|---------------|-----------------------|
+| — | (none) | the bulk of the registry: `Rsi`, `Ema`, `Macd`, `BollingerBands`, … |
+| reference series | `reference` | pairwise: `Beta`, `Alpha`, `PearsonCorrelation`, `Cointegration`, … |
+| derivatives tick | `derivs` | `FundingRate`, `OpenInterestDelta`, `TakerBuySellRatio`, … |
+| order book | `books` | `Microprice`, `DepthSlope`, `OrderFlowImbalance`, … |
+| trades | `trades` | `Vpin`, `CumulativeVolumeDelta`, `TradeImbalance`, … |
+| trades **and** order book | `trades` + `books` | `EffectiveSpread`, `KylesLambda`, `RealizedSpread` |
+| market cross-section | `sections` | breadth: `AdvanceDecline`, `McClellanOscillator`, `Trin`, … |
+
+A batch scan supplies them as parallel arrays beside the candles, one entry per
+candle:
+
+```json
+{ "AAA": { "candles": [ … ],
+           "books":   [ { "bids": [{"price": 99.5, "size": 12}],
+                          "asks": [{"price": 100.5, "size": 9}] }, … ] } }
+```
+
+A symbol that needs no feed keeps the bare form, `{ "AAA": [ candle, … ] }`.
+A streaming caller passes the same fields per bar under `feeds`:
+
+```json
+{ "cmd": "feed", "symbol": "AAA", "candle": { … },
+  "feeds": { "orderbook": { "bids": [ … ], "asks": [ … ] } } }
+```
+
+A feed array that is not exactly as long as the candle array is an error, and so
+is a spec naming an indicator whose feed the scan does not carry. Both are
+refusals rather than an indicator that quietly returns nothing on every bar.
+
+The CLI reads candle-only universes from per-symbol CSV files (`<SYMBOL>.csv`);
+a universe with side feeds comes in as a JSON dataset on stdin (`--stdin`). The
+bindings pass either shape as JSON in the `command` payload.
 
 ## See also
 

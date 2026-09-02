@@ -3,8 +3,9 @@
 
 use crate::error::Result;
 use crate::expr::{Expr, PriceField};
+use crate::feeds::BarFeeds;
 use crate::indicator_set::IndicatorSet;
-use crate::spec::{Condition, ScanSpec};
+use crate::spec::ScanSpec;
 use wickra_backtest_core::Candle;
 
 /// The rolling state of one symbol: its indicator set, a bar counter, a readiness
@@ -24,10 +25,7 @@ impl SymbolState {
     /// does not know an indicator.
     pub(crate) fn new(spec: &ScanSpec) -> Result<Self> {
         let mut inds = IndicatorSet::new();
-        collect_exprs(&spec.condition, &mut |e| inds.required(e))?;
-        if let Some(rank) = &spec.rank {
-            inds.required(&rank.by)?;
-        }
+        spec.visit_exprs(&mut |e| inds.required(e))?;
         let warmup = inds.max_warmup();
         Ok(Self {
             inds,
@@ -39,10 +37,10 @@ impl SymbolState {
         })
     }
 
-    /// Fold one candle in O(1): tick every indicator, shift the candle window and
-    /// update the readiness flag.
-    pub(crate) fn fold(&mut self, candle: &Candle) {
-        self.inds.update(candle);
+    /// Fold one bar in O(1): tick every indicator against the candle and the
+    /// bar's side feeds, shift the candle window and update the readiness flag.
+    pub(crate) fn fold(&mut self, candle: &Candle, feeds: BarFeeds<'_>) {
+        self.inds.update(candle, feeds);
         self.prev = self.cur.take();
         self.cur = Some(*candle);
         self.bars += 1;
@@ -85,32 +83,10 @@ fn price_field(candle: &Candle, field: PriceField) -> f64 {
     }
 }
 
-/// Visit every expression in a condition tree, short-circuiting on error.
-fn collect_exprs<F>(cond: &Condition, visit: &mut F) -> Result<()>
-where
-    F: FnMut(&Expr) -> Result<()>,
-{
-    match cond {
-        Condition::Cmp { left, right, .. } => {
-            visit(left)?;
-            visit(right)
-        }
-        Condition::CrossSection { expr, .. } => visit(expr),
-        Condition::Breadth { inner, .. } => collect_exprs(inner, visit),
-        Condition::All { conditions } | Condition::Any { conditions } => {
-            for c in conditions {
-                collect_exprs(c, visit)?;
-            }
-            Ok(())
-        }
-        Condition::Not { condition } => collect_exprs(condition, visit),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::spec::Comparator;
+    use crate::spec::{Comparator, Condition};
 
     fn candle(close: f64) -> Candle {
         Candle {
@@ -152,14 +128,14 @@ mod tests {
         assert!(!state.is_ready());
 
         for c in [1.0, 2.0, 3.0] {
-            state.fold(&candle(c));
+            state.fold(&candle(c), BarFeeds::default());
         }
         assert!(state.is_ready());
         assert_eq!(state.expr_cur(&sma), Some(2.0)); // (1+2+3)/3
         assert_eq!(state.expr_cur(&close), Some(3.0));
         assert_eq!(state.expr_cur(&Expr::Const { value: 9.0 }), Some(9.0));
 
-        state.fold(&candle(6.0));
+        state.fold(&candle(6.0), BarFeeds::default());
         assert_eq!(state.expr_cur(&close), Some(6.0));
         assert_eq!(state.expr_prev(&close), Some(3.0));
         assert_eq!(state.expr_prev(&sma), Some(2.0));
