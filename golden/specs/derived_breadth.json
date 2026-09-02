@@ -1,0 +1,63 @@
+{
+  "universe": [
+    "sym-01",
+    "sym-02",
+    "sym-03",
+    "sym-04",
+    "sym-05",
+    "sym-06"
+  ],
+  "timeframe": "1h",
+  "breadth": {
+    "period": 20,
+    "ma_period": 10
+  },
+  "condition": {
+    "type": "all",
+    "conditions": [
+      {
+        "type": "cmp",
+        "left": {
+          "kind": "indicator",
+          "name": "AdvanceDecline"
+        },
+        "op": "gt",
+        "right": {
+          "kind": "const",
+          "value": -1e+18
+        }
+      },
+      {
+        "type": "cmp",
+        "left": {
+          "kind": "indicator",
+          "name": "PercentAboveMa"
+        },
+        "op": "gt",
+        "right": {
+          "kind": "const",
+          "value": -1e+18
+        }
+      },
+      {
+        "type": "cmp",
+        "left": {
+          "kind": "indicator",
+          "name": "BullishPercentIndex"
+        },
+        "op": "gt",
+        "right": {
+          "kind": "const",
+          "value": -1e+18
+        }
+      }
+    ]
+  },
+  "rank": {
+    "by": {
+      "kind": "indicator",
+      "name": "PercentAboveMa"
+    },
+    "desc": true
+  }
+}

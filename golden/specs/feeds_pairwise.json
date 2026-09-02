@@ -1,0 +1,56 @@
+{
+  "universe": [
+    "sym-01",
+    "sym-02",
+    "sym-03",
+    "sym-04",
+    "sym-05",
+    "sym-06"
+  ],
+  "timeframe": "1h",
+  "condition": {
+    "type": "all",
+    "conditions": [
+      {
+        "type": "cmp",
+        "left": {
+          "kind": "indicator",
+          "name": "RollingCorrelation",
+          "params": [
+            20
+          ]
+        },
+        "op": "gt",
+        "right": {
+          "kind": "const",
+          "value": -1e+18
+        }
+      },
+      {
+        "type": "cmp",
+        "left": {
+          "kind": "indicator",
+          "name": "Beta",
+          "params": [
+            20
+          ]
+        },
+        "op": "gt",
+        "right": {
+          "kind": "const",
+          "value": -1e+18
+        }
+      }
+    ]
+  },
+  "rank": {
+    "by": {
+      "kind": "indicator",
+      "name": "RollingCorrelation",
+      "params": [
+        20
+      ]
+    },
+    "desc": true
+  }
+}

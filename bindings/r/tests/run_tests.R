@@ -40,11 +40,12 @@ inband <- wkscreen_command(screener, '{"cmd":"nope"}')
 stopifnot(grepl('"ok":false', inband, fixed = TRUE))
 
 ## cross-language golden parity: build the screener from each committed
-## golden/specs/*.json, run a scan over the shared golden/data.json, and assert
-## the response equals golden/expected/<spec>.json byte-for-byte. The binding
-## returns the core's compact command output verbatim, so byte equality is the
-## exact cross-language parity check. The fixtures arrive in a later phase; until
-## then the golden section is skipped.
+## golden/specs/*.json, run a scan over the matching committed dataset, and
+## assert the response equals golden/expected/<spec>.json byte-for-byte. The
+## binding returns the core's compact command output verbatim, so byte equality
+## is the exact cross-language parity check. A spec named feeds_* scans
+## data-feeds.json, which carries the side feeds; every other spec scans the
+## candle-only data.json.
 golden_dir <- function() {
   d <- normalizePath(getwd(), mustWork = FALSE)
   for (i in seq_len(8)) {
@@ -59,11 +60,16 @@ golden_dir <- function() {
 
 g <- golden_dir()
 if (!is.null(g)) {
-  dataset <- trimws(paste(
-    readLines(file.path(g, "data.json"), warn = FALSE), collapse = "\n"
-  ))
+  read_dataset <- function(file) {
+    trimws(paste(readLines(file.path(g, file), warn = FALSE), collapse = "\n"))
+  }
+  datasets <- list(
+    "data.json" = read_dataset("data.json"),
+    "data-feeds.json" = read_dataset("data-feeds.json")
+  )
   for (spec_path in list.files(file.path(g, "specs"), pattern = "\\.json$", full.names = TRUE)) {
     name <- basename(spec_path)
+    dataset <- datasets[[if (startsWith(name, "feeds_")) "data-feeds.json" else "data.json"]]
     spec_json <- paste(readLines(spec_path, warn = FALSE), collapse = "\n")
     expected <- trimws(paste(
       readLines(file.path(g, "expected", name), warn = FALSE), collapse = "\n"

@@ -15,7 +15,30 @@ verbatim — there is no per-language JSON re-formatting.
 |------|------|
 | `data/sym-01.csv` … `sym-06.csv` | The canonical universe (per-symbol OHLCV). |
 | `data.json` | The same universe as a JSON dataset — the input the bindings feed to a `scan` command. |
+| `data-feeds.json` | The same candles plus the side feeds: a reference series, derivatives ticks, order books, trades and market panels. |
+| `generate_feeds.py` | Regenerates `data-feeds.json` from `data.json`. The feeds are functions of each bar rather than random, so the output is reproducible and reviewable. |
 | `specs/*.json` | The canonical scan specs. Every binding globs this directory, so adding one here adds it to all ten languages. |
+
+## Which dataset a spec scans
+
+A spec named `feeds_*` scans `data-feeds.json`; every other spec scans
+`data.json`. That one rule is all a binding needs, which is why it is a file-name
+convention rather than a manifest each of ten languages has to parse.
+
+The fed specs are one per family that reads something beyond the candle —
+`feeds_pairwise`, `feeds_derivatives`, `feeds_orderbook`, `feeds_trades`,
+`feeds_breadth` — so the corpus fails if a feed stops reaching its indicators in
+any language. `derived_breadth` is the counterpart: it scans the plain candle
+dataset and reads the market panel the screener assembles from the universe
+itself, so the derived path is pinned too.
+
+Two invariants guard the corpus beyond byte equality, because a blessed file of
+an empty report would compare equal to itself for ever:
+
+- every match in a fed report carries a **finite value** for each indicator its
+  spec names, so a feed that silently produced nothing fails rather than blesses;
+- a candle-only spec produces the **identical** report against both datasets, so
+  a feed leaking into the candle path would show up here.
 | `expected/<spec>.json` | The byte-exact `ScanReport` for each spec. |
 
 ## Data formula
