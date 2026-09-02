@@ -125,6 +125,45 @@ jobs:
           tool: osv-scanner
       - run: osv-scanner scan source --recursive .
 
+  # Four static checks that no other job can fail on. Each exists because the
+  # thing it guards is invisible to the rest of CI: the golden corpus compares
+  # values, so a binding that lost a method has no test to run; a version that
+  # disagrees with itself compiles fine and surfaces on a user's machine after an
+  # irreversible tag; a relative link in a binding README resolves on GitHub and
+  # nowhere else; and a licence text that never travelled is missing only in the
+  # published package.
+  binding-surface:
+    name: Binding surface parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 10 # static checks; if they are not done in ten minutes they are stuck
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Ten language reaches sit on one C ABI, and each is tested separately.
+      # This holds every surface to the header instead.
+      - name: Compare every binding's surface with the C ABI
+        run: python3 scripts/check_binding_surface.py
+
+      # The version lives in two dozen declarations across six package managers.
+      # A bump that misses one ships a package pinning a binary that was never
+      # published, and that surfaces on a user's machine after the tag.
+      - name: Every version declaration agrees
+        run: python3 scripts/check_version_sync.py
+
+      # The binding READMEs are the long descriptions PyPI, NuGet, pkg.go.dev and
+      # r-universe render. A repository-relative link resolves on GitHub and is
+      # dead on every one of those pages.
+      - name: Binding READMEs link absolutely
+        run: python3 scripts/check_readme_links.py
+
+      # Cargo decides what to package from git, so a licence copy that is
+      # untracked or ignored never reaches the .crate. Committed copies are the
+      # only thing that works, and their cost is drift.
+      - name: Published packages carry their licence texts
+        run: python3 scripts/check_license_copies.py
+
   coverage:
     name: Coverage
     runs-on: ubuntu-latest

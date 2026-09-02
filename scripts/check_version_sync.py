@@ -1,0 +1,229 @@
+"""Assert that every place carrying the release version agrees.
+
+The version lives in two dozen declarations across six package managers, and a
+bump that misses one produces a release where, say, the npm package pins a native
+binary that was never published. That failure surfaces at install time, on a
+user's machine, after the tag is irreversible -- so it is worth a cheap check
+before the tag rather than a patch release after it.
+
+    python scripts/check_version_sync.py                    # all files agree
+    python scripts/check_version_sync.py --previous 0.1.0   # and none is stale
+
+The file list is explicit rather than a repository-wide grep on purpose:
+`Cargo.lock` records third-party crates that will occasionally sit at the same
+version as this project, and a grep that matched those would either be noisy or
+be silenced with exceptions that outlive their reason.
+
+The cost of an explicit list is that a missing entry is silent rather than wrong
+-- the check passes on a file it was never told about. `wickra-backtest` lost two
+releases that way, with its Java benchmarks pom sitting at 0.1.0 while everything
+else moved. So this list was derived by grepping the tree for the current version
+and classifying every hit, not by copying the sibling repository's list: this
+repository pins `screener-core` from three manifests rather than one, ships the
+C# csproj a directory deeper, has no Java example pom, and prints its version in
+`examples/README.md`.
+
+Run from the repository root.
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import re
+import sys
+
+ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+
+# (path, description, pattern with @V@ standing in for the version, expected count)
+TOUCHPOINTS: list[tuple[str, str, str, int]] = [
+    ("Cargo.toml", "workspace version", r'(?m)^version = "@V@"$', 1),
+    ("Cargo.toml", "workspace dependency pin", r'screener-core = \{ version = "@V@", path = ', 1),
+    # Two manifests pin screener-core by path *and* version instead of through
+    # the workspace: the wasm binding and the bench crate both want
+    # `default-features = false`, which a `workspace = true` entry cannot add.
+    # They are the entries a bump forgets, because they do not look like version
+    # declarations -- they look like dependency lines.
+    (
+        "bindings/wasm/Cargo.toml",
+        "screener-core pin",
+        r'path = "\.\./\.\./crates/screener-core", version = "@V@"',
+        1,
+    ),
+    (
+        "crates/screener-bench/Cargo.toml",
+        "screener-core pin",
+        r'path = "\.\./screener-core", version = "@V@"',
+        1,
+    ),
+    ("bindings/python/pyproject.toml", "wheel version", r'(?m)^version = "@V@"$', 1),
+    ("bindings/node/package.json", "package version", r'"version": "@V@"', 1),
+    (
+        "bindings/node/package.json",
+        "optional platform dependencies",
+        r'"wickra-screener-[a-z0-9-]+": "@V@"',
+        6,
+    ),
+    ("bindings/r/DESCRIPTION", "R package version", r"(?m)^Version: @V@$", 1),
+    ("bindings/java/pom.xml", "Maven version", r"<version>@V@</version>", 1),
+    # A directory deeper than the sibling repositories put it, beside the csproj
+    # that names it in <PackageReadmeFile>.
+    (
+        "bindings/csharp/WickraScreener/WickraScreener.csproj",
+        "NuGet version",
+        r"<Version>@V@</Version>",
+        1,
+    ),
+    # The prose sentence and the supported row.
+    ("SECURITY.md", "supported version", r"@V@", 2),
+    # The citation names the release it belongs to. Nothing else reads this
+    # file, so a stale `version` here is invisible until GitHub's citation box
+    # or Zenodo shows it beside a `date-released` that did move.
+    ("CITATION.cff", "citation version", r'(?m)^version: "@V@"$', 1),
+    # The example package is private and never published, but the examples job
+    # installs it, so a version it does not resolve is a CI failure.
+    ("examples/node/package.json", "example package version", r'"version": "@V@"', 1),
+    # Sample output in the examples guide. Every example prints the version, and
+    # this is the text a reader compares their run against.
+    ("examples/README.md", "sample output", r"wickra-screener @V@", 1),
+    # A package-lock.json states the root package's version twice: once at the
+    # top and once inside `packages[""]`. Only the first is what `npm version`
+    # rewrites, so the second goes stale on its own. Both are ours and both are
+    # checked exactly; the rest of the lockfile stays a presence check in
+    # GENERATED, because those versions are other people's.
+    (
+        "bindings/node/package-lock.json",
+        "own version, both records",
+        r'"name": "wickra-screener",\s+"version": "@V@"',
+        2,
+    ),
+]
+
+# Each platform package declares its own version.
+PLATFORMS = [
+    "darwin-arm64",
+    "darwin-x64",
+    "linux-arm64-gnu",
+    "linux-x64-gnu",
+    "win32-arm64-msvc",
+    "win32-x64-msvc",
+]
+for platform in PLATFORMS:
+    TOUCHPOINTS.append(
+        (
+            f"bindings/node/npm/{platform}/package.json",
+            "platform package version",
+            r'"version": "@V@"',
+            1,
+        )
+    )
+
+# Generated files: regenerated by their own toolchain, checked here so a bump that
+# forgot to rebuild them is caught before the tag rather than at install. Only
+# presence is asserted, not a count -- the count is the generator's business and
+# changes when the generator does, which would make an exact number a false alarm
+# waiting to happen.
+GENERATED = [
+    ("bindings/node/index.js", "napi version guard", r"'@V@'"),
+    ("bindings/node/package-lock.json", "lockfile", r'"version": "@V@"'),
+]
+
+
+def read(rel: str) -> str | None:
+    path = os.path.join(ROOT, rel)
+    if not os.path.exists(path):
+        return None
+    with open(path, encoding="utf-8") as handle:
+        return handle.read()
+
+
+def workspace_version() -> str:
+    text = read("Cargo.toml")
+    if text is None:
+        raise SystemExit("Cargo.toml not found; run this from the repository")
+    match = re.search(r'(?m)^version = "([^"]+)"$', text)
+    if match is None:
+        raise SystemExit("Cargo.toml declares no workspace version")
+    return match.group(1)
+
+
+def own_lock_packages(lock: str, version: str) -> bool:
+    """True when a workspace crate in Cargo.lock still carries `version`.
+
+    Membership is derived rather than matched on a name prefix: a package with no
+    `source` line is one of ours, because every crate from a registry or a git
+    remote records where it came from.
+    """
+    for block in lock.split("[[package]]"):
+        if re.search(r"(?m)^source = ", block):
+            continue
+        if re.search(rf'(?m)^version = "{re.escape(version)}"$', block):
+            return True
+    return False
+
+
+def check(version: str, previous: str | None) -> int:
+    failures: list[str] = []
+    checked = 0
+
+    for rel, what, pattern, expected in TOUCHPOINTS:
+        text = read(rel)
+        if text is None:
+            failures.append(f"{rel}: missing, but listed as carrying the version")
+            continue
+        found = len(re.findall(pattern.replace("@V@", re.escape(version)), text))
+        checked += 1
+        if found != expected:
+            failures.append(
+                f"{rel}: {what} -- expected {expected} occurrence(s) of {version}, found {found}"
+            )
+
+    for rel, what, pattern in GENERATED:
+        text = read(rel)
+        if text is None:
+            failures.append(f"{rel}: missing, but listed as carrying the version")
+            continue
+        checked += 1
+        if not re.search(pattern.replace("@V@", re.escape(version)), text):
+            failures.append(f"{rel}: {what} -- no occurrence of {version}; regenerate it")
+
+    # A stale copy of the previous version is the other half of the same mistake:
+    # every file agreeing is not enough if one of them agrees on the old number.
+    if previous is not None and previous != version:
+        stale = []
+        stale_sources = [(rel, pat) for rel, _, pat, _ in TOUCHPOINTS]
+        stale_sources += [(rel, pat) for rel, _, pat in GENERATED]
+        for rel, pattern in stale_sources:
+            text = read(rel)
+            if text is None:
+                continue
+            if re.search(pattern.replace("@V@", re.escape(previous)), text):
+                stale.append(rel)
+        lock = read("Cargo.lock")
+        if lock is not None and own_lock_packages(lock, previous):
+            stale.append("Cargo.lock")
+        for rel in sorted(set(stale)):
+            failures.append(f"{rel}: still carries the previous version {previous}")
+
+    print(f"version {version}: checked {checked} declarations")
+    if failures:
+        print("\nversion declarations disagree:", file=sys.stderr)
+        for line in failures:
+            print(f"  {line}", file=sys.stderr)
+        return 1
+    print("every declaration agrees.")
+    return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--previous",
+        help="also assert no declaration still carries this earlier version",
+    )
+    args = parser.parse_args()
+    return check(workspace_version(), args.previous)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
