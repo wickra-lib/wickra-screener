@@ -16,6 +16,23 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-D warnings"
+  # Network-flake resilience: retry transient registry/DNS failures at the tool
+  # level, so a blip fetching crates.io / npm / PyPI inside any build step
+  # (cargo, napi, maturin, wasm-pack, npm install, pip) retries by itself instead
+  # of failing the job and needing a manual re-run. Cargo treats "couldn't
+  # resolve host" / connect / timeout as spurious and retries with backoff; ten
+  # attempts ride out a transient DNS blip on a runner. This complements the
+  # setup-action retries below, which only cover the toolchain download.
+  CARGO_NET_RETRY: "10"
+  CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+  npm_config_fetch_retries: "5"
+  npm_config_fetch_retry_maxtimeout: "120000"
+  PIP_RETRIES: "5"
+  PIP_DEFAULT_TIMEOUT: "120"
+
 jobs:
   test:
     name: Test (${{ matrix.os }}, ${{ matrix.features }})
@@ -32,13 +49,31 @@ jobs:
     # info (tests do not need it) removes the collision and keeps runner disk use
     # down; RUSTFLAGS is part of the cache key.
     env:
-      RUSTFLAGS: "-C debuginfo=0"
+      # Overrides the workflow-level RUSTFLAGS, so it repeats `-D warnings`
+      # rather than dropping it.
+      RUSTFLAGS: "-D warnings -C debuginfo=0"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-rust
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+      - name: Warm cargo registry (retry transient DNS/registry flakes)
+        shell: bash
+        # CARGO_NET_RETRY rides out short blips, but a longer runner DNS outage
+        # outlasts cargo's rapid in-process retries: the crates.io index fetch
+        # the first cargo step does ("Could not resolve host: index.crates.io")
+        # then fails the whole job. Pre-fetch the dependency graph here with real
+        # backoff, so the steps after it resolve from the warmed local cache.
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if cargo fetch; then exit 0; fi
+            echo "::warning::cargo fetch failed (attempt $attempt/5) -- likely a registry/DNS flake; retrying in $((attempt * 20))s..."
+            sleep $((attempt * 20))
+          done
+          echo "::error::cargo fetch still failing after 5 attempts"
+          exit 1
       # The PyO3 extension cdylib is built and tested by the `python` job via
       # maturin; the C ABI cdylib by the `c-abi` job. Exclude both here.
       - run: cargo build --workspace ${{ matrix.features }} --exclude wickra-screener-python --exclude wickra-screener-c
@@ -56,6 +91,22 @@ jobs:
         with:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+      - name: Warm cargo registry (retry transient DNS/registry flakes)
+        shell: bash
+        # CARGO_NET_RETRY rides out short blips, but a longer runner DNS outage
+        # outlasts cargo's rapid in-process retries: the crates.io index fetch
+        # the first cargo step does ("Could not resolve host: index.crates.io")
+        # then fails the whole job. Pre-fetch the dependency graph here with real
+        # backoff, so the steps after it resolve from the warmed local cache.
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if cargo fetch; then exit 0; fi
+            echo "::warning::cargo fetch failed (attempt $attempt/5) -- likely a registry/DNS flake; retrying in $((attempt * 20))s..."
+            sleep $((attempt * 20))
+          done
+          echo "::error::cargo fetch still failing after 5 attempts"
+          exit 1
       - run: cargo fmt --all -- --check
       - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
       - run: cargo clippy --workspace --all-targets --no-default-features -- -D warnings
@@ -72,6 +123,22 @@ jobs:
         with:
           toolchain: "1.86"
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+      - name: Warm cargo registry (retry transient DNS/registry flakes)
+        shell: bash
+        # CARGO_NET_RETRY rides out short blips, but a longer runner DNS outage
+        # outlasts cargo's rapid in-process retries: the crates.io index fetch
+        # the first cargo step does ("Could not resolve host: index.crates.io")
+        # then fails the whole job. Pre-fetch the dependency graph here with real
+        # backoff, so the steps after it resolve from the warmed local cache.
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if cargo fetch; then exit 0; fi
+            echo "::warning::cargo fetch failed (attempt $attempt/5) -- likely a registry/DNS flake; retrying in $((attempt * 20))s..."
+            sleep $((attempt * 20))
+          done
+          echo "::error::cargo fetch still failing after 5 attempts"
+          exit 1
       # The Node binding (napi 3) needs Rust 1.88 and is checked separately; the
       # Python binding needs maturin's platform link flags and is built by the
       # `python` job. The library, CLI, C ABI and WASM stay at 1.86.
@@ -92,6 +159,22 @@ jobs:
         with:
           toolchain: "1.88"
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+      - name: Warm cargo registry (retry transient DNS/registry flakes)
+        shell: bash
+        # CARGO_NET_RETRY rides out short blips, but a longer runner DNS outage
+        # outlasts cargo's rapid in-process retries: the crates.io index fetch
+        # the first cargo step does ("Could not resolve host: index.crates.io")
+        # then fails the whole job. Pre-fetch the dependency graph here with real
+        # backoff, so the steps after it resolve from the warmed local cache.
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if cargo fetch; then exit 0; fi
+            echo "::warning::cargo fetch failed (attempt $attempt/5) -- likely a registry/DNS flake; retrying in $((attempt * 20))s..."
+            sleep $((attempt * 20))
+          done
+          echo "::error::cargo fetch still failing after 5 attempts"
+          exit 1
       - run: cargo build -p wickra-screener-node
 
   supply-chain:
@@ -196,17 +279,45 @@ jobs:
         with:
           components: llvm-tools-preview
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+      - name: Warm cargo registry (retry transient DNS/registry flakes)
+        shell: bash
+        # CARGO_NET_RETRY rides out short blips, but a longer runner DNS outage
+        # outlasts cargo's rapid in-process retries: the crates.io index fetch
+        # the first cargo step does ("Could not resolve host: index.crates.io")
+        # then fails the whole job. Pre-fetch the dependency graph here with real
+        # backoff, so the steps after it resolve from the warmed local cache.
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if cargo fetch; then exit 0; fi
+            echo "::warning::cargo fetch failed (attempt $attempt/5) -- likely a registry/DNS flake; retrying in $((attempt * 20))s..."
+            sleep $((attempt * 20))
+          done
+          echo "::error::cargo fetch still failing after 5 attempts"
+          exit 1
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@742a3317eac7bd62f91cd888b4eead5e784ba833 # v2.87.1
         with:
           tool: cargo-llvm-cov
-      # Measure the core in its sequential (no rayon) configuration — the scan is
-      # byte-identical either way, and this keeps coverage deterministic.
-      - name: Generate coverage (lcov)
+      # Both feature sets, merged into one report, and the CLI alongside the
+      # core. `folded_states` exists twice behind `#[cfg(feature = "parallel")]`,
+      # so a single-configuration run compiles only one of the two and the other
+      # is neither covered nor counted as missing -- it simply is not there. The
+      # two runs write profiles without reporting, and the third merges them, so
+      # the rayon fold and the sequential fold both appear.
+      #
+      # The CLI is measured too: it owns the CSV universe loader and the report
+      # rendering, which no other job's coverage sees.
+      - name: Generate coverage (sequential profile)
         run: >
-          cargo llvm-cov --no-default-features
-          -p screener-core
-          --lcov --output-path lcov.info
+          cargo llvm-cov --no-report --no-default-features
+          -p screener-core -p wickra-screener
+      - name: Generate coverage (parallel profile)
+        run: >
+          cargo llvm-cov --no-report
+          -p screener-core -p wickra-screener
+      - name: Merge into one lcov report
+        run: cargo llvm-cov report --lcov --output-path lcov.info
       - name: Upload to Codecov
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
@@ -233,6 +344,22 @@ jobs:
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
           workspaces: fuzz
+
+      - name: Warm cargo registry (retry transient DNS/registry flakes)
+        shell: bash
+        # CARGO_NET_RETRY rides out short blips, but a longer runner DNS outage
+        # outlasts cargo's rapid in-process retries: the crates.io index fetch
+        # the first cargo step does ("Could not resolve host: index.crates.io")
+        # then fails the whole job. Pre-fetch the dependency graph here with real
+        # backoff, so the steps after it resolve from the warmed local cache.
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if cargo fetch; then exit 0; fi
+            echo "::warning::cargo fetch failed (attempt $attempt/5) -- likely a registry/DNS flake; retrying in $((attempt * 20))s..."
+            sleep $((attempt * 20))
+          done
+          echo "::error::cargo fetch still failing after 5 attempts"
+          exit 1
       - name: Install cargo-fuzz
         uses: taiki-e/install-action@742a3317eac7bd62f91cd888b4eead5e784ba833 # v2.87.1
         with:
@@ -272,6 +399,22 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-rust
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+      - name: Warm cargo registry (retry transient DNS/registry flakes)
+        shell: bash
+        # CARGO_NET_RETRY rides out short blips, but a longer runner DNS outage
+        # outlasts cargo's rapid in-process retries: the crates.io index fetch
+        # the first cargo step does ("Could not resolve host: index.crates.io")
+        # then fails the whole job. Pre-fetch the dependency graph here with real
+        # backoff, so the steps after it resolve from the warmed local cache.
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if cargo fetch; then exit 0; fi
+            echo "::warning::cargo fetch failed (attempt $attempt/5) -- likely a registry/DNS flake; retrying in $((attempt * 20))s..."
+            sleep $((attempt * 20))
+          done
+          echo "::error::cargo fetch still failing after 5 attempts"
+          exit 1
 
       - name: Build the C ABI library the non-native bindings link against
         run: cargo build -p wickra-screener-c --release
@@ -411,6 +554,22 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - uses: ./.github/actions/setup-rust
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+      - name: Warm cargo registry (retry transient DNS/registry flakes)
+        shell: bash
+        # CARGO_NET_RETRY rides out short blips, but a longer runner DNS outage
+        # outlasts cargo's rapid in-process retries: the crates.io index fetch
+        # the first cargo step does ("Could not resolve host: index.crates.io")
+        # then fails the whole job. Pre-fetch the dependency graph here with real
+        # backoff, so the steps after it resolve from the warmed local cache.
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if cargo fetch; then exit 0; fi
+            echo "::warning::cargo fetch failed (attempt $attempt/5) -- likely a registry/DNS flake; retrying in $((attempt * 20))s..."
+            sleep $((attempt * 20))
+          done
+          echo "::error::cargo fetch still failing after 5 attempts"
+          exit 1
       - name: Install Python dev dependencies
         shell: bash
         run: |
@@ -484,6 +643,22 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-rust
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+      - name: Warm cargo registry (retry transient DNS/registry flakes)
+        shell: bash
+        # CARGO_NET_RETRY rides out short blips, but a longer runner DNS outage
+        # outlasts cargo's rapid in-process retries: the crates.io index fetch
+        # the first cargo step does ("Could not resolve host: index.crates.io")
+        # then fails the whole job. Pre-fetch the dependency graph here with real
+        # backoff, so the steps after it resolve from the warmed local cache.
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if cargo fetch; then exit 0; fi
+            echo "::warning::cargo fetch failed (attempt $attempt/5) -- likely a registry/DNS flake; retrying in $((attempt * 20))s..."
+            sleep $((attempt * 20))
+          done
+          echo "::error::cargo fetch still failing after 5 attempts"
+          exit 1
       # The toolchain download flakes on the Windows runners often enough that a
       # rerun with no code change is the standard fix. One retry costs half a
       # minute; a failed job costs the whole matrix a rerun.
@@ -531,6 +706,22 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+      - name: Warm cargo registry (retry transient DNS/registry flakes)
+        shell: bash
+        # CARGO_NET_RETRY rides out short blips, but a longer runner DNS outage
+        # outlasts cargo's rapid in-process retries: the crates.io index fetch
+        # the first cargo step does ("Could not resolve host: index.crates.io")
+        # then fails the whole job. Pre-fetch the dependency graph here with real
+        # backoff, so the steps after it resolve from the warmed local cache.
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if cargo fetch; then exit 0; fi
+            echo "::warning::cargo fetch failed (attempt $attempt/5) -- likely a registry/DNS flake; retrying in $((attempt * 20))s..."
+            sleep $((attempt * 20))
+          done
+          echo "::error::cargo fetch still failing after 5 attempts"
+          exit 1
       - name: Install wasm-pack
         uses: taiki-e/install-action@742a3317eac7bd62f91cd888b4eead5e784ba833 # v2.87.1
         with:
@@ -547,7 +738,21 @@ jobs:
       - name: Build the wasm binding for node
         run: wasm-pack build --target nodejs --out-dir pkg-node
         working-directory: bindings/wasm
+      # The toolchain download flakes on the runners often enough that a retry
+      # with no code change is the standard fix, the same way the node, python
+      # and examples jobs handle it.
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        id: setup_node
+        continue-on-error: true
+        with:
+          node-version: "22"
+      - name: Pause before retrying the toolchain download
+        if: steps.setup_node.outcome == 'failure'
+        run: sleep 30
+        shell: bash
+      - name: Retry the toolchain download
+        if: steps.setup_node.outcome == 'failure'
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"
       # An explicit glob rather than `node --test tests/`: Node 22 reads a bare
@@ -572,6 +777,22 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-rust
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+      - name: Warm cargo registry (retry transient DNS/registry flakes)
+        shell: bash
+        # CARGO_NET_RETRY rides out short blips, but a longer runner DNS outage
+        # outlasts cargo's rapid in-process retries: the crates.io index fetch
+        # the first cargo step does ("Could not resolve host: index.crates.io")
+        # then fails the whole job. Pre-fetch the dependency graph here with real
+        # backoff, so the steps after it resolve from the warmed local cache.
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if cargo fetch; then exit 0; fi
+            echo "::warning::cargo fetch failed (attempt $attempt/5) -- likely a registry/DNS flake; retrying in $((attempt * 20))s..."
+            sleep $((attempt * 20))
+          done
+          echo "::error::cargo fetch still failing after 5 attempts"
+          exit 1
       - name: Install cbindgen
         uses: taiki-e/install-action@742a3317eac7bd62f91cd888b4eead5e784ba833 # v2.87.1
         with:
@@ -615,6 +836,22 @@ jobs:
           cache: false
       - uses: ./.github/actions/setup-rust
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+      - name: Warm cargo registry (retry transient DNS/registry flakes)
+        shell: bash
+        # CARGO_NET_RETRY rides out short blips, but a longer runner DNS outage
+        # outlasts cargo's rapid in-process retries: the crates.io index fetch
+        # the first cargo step does ("Could not resolve host: index.crates.io")
+        # then fails the whole job. Pre-fetch the dependency graph here with real
+        # backoff, so the steps after it resolve from the warmed local cache.
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if cargo fetch; then exit 0; fi
+            echo "::warning::cargo fetch failed (attempt $attempt/5) -- likely a registry/DNS flake; retrying in $((attempt * 20))s..."
+            sleep $((attempt * 20))
+          done
+          echo "::error::cargo fetch still failing after 5 attempts"
+          exit 1
       - name: Build the C ABI library
         run: cargo build -p wickra-screener-c --release
       - name: Vendored header in sync with the C ABI
@@ -669,6 +906,22 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-rust
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+      - name: Warm cargo registry (retry transient DNS/registry flakes)
+        shell: bash
+        # CARGO_NET_RETRY rides out short blips, but a longer runner DNS outage
+        # outlasts cargo's rapid in-process retries: the crates.io index fetch
+        # the first cargo step does ("Could not resolve host: index.crates.io")
+        # then fails the whole job. Pre-fetch the dependency graph here with real
+        # backoff, so the steps after it resolve from the warmed local cache.
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if cargo fetch; then exit 0; fi
+            echo "::warning::cargo fetch failed (attempt $attempt/5) -- likely a registry/DNS flake; retrying in $((attempt * 20))s..."
+            sleep $((attempt * 20))
+          done
+          echo "::error::cargo fetch still failing after 5 attempts"
+          exit 1
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           dotnet-version: "8.0"
@@ -693,6 +946,22 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-rust
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+      - name: Warm cargo registry (retry transient DNS/registry flakes)
+        shell: bash
+        # CARGO_NET_RETRY rides out short blips, but a longer runner DNS outage
+        # outlasts cargo's rapid in-process retries: the crates.io index fetch
+        # the first cargo step does ("Could not resolve host: index.crates.io")
+        # then fails the whole job. Pre-fetch the dependency graph here with real
+        # backoff, so the steps after it resolve from the warmed local cache.
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if cargo fetch; then exit 0; fi
+            echo "::warning::cargo fetch failed (attempt $attempt/5) -- likely a registry/DNS flake; retrying in $((attempt * 20))s..."
+            sleep $((attempt * 20))
+          done
+          echo "::error::cargo fetch still failing after 5 attempts"
+          exit 1
       # The pom points native.lib.dir at target/debug, so build the debug profile.
       - name: Build the C ABI library
         run: cargo build -p wickra-screener-c
@@ -721,6 +990,22 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-rust
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+      - name: Warm cargo registry (retry transient DNS/registry flakes)
+        shell: bash
+        # CARGO_NET_RETRY rides out short blips, but a longer runner DNS outage
+        # outlasts cargo's rapid in-process retries: the crates.io index fetch
+        # the first cargo step does ("Could not resolve host: index.crates.io")
+        # then fails the whole job. Pre-fetch the dependency graph here with real
+        # backoff, so the steps after it resolve from the warmed local cache.
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if cargo fetch; then exit 0; fi
+            echo "::warning::cargo fetch failed (attempt $attempt/5) -- likely a registry/DNS flake; retrying in $((attempt * 20))s..."
+            sleep $((attempt * 20))
+          done
+          echo "::error::cargo fetch still failing after 5 attempts"
+          exit 1
       - name: Build the C ABI library
         run: cargo build -p wickra-screener-c --release
       - uses: r-lib/actions/setup-r@465b7d8e732ca3921382b1674c59bada9cbf3399 # v2.13.0

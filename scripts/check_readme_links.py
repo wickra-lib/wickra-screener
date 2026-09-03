@@ -43,6 +43,9 @@ SKIP_DIRS = {
     "node_modules",
     "obj",
     "pkg",
+    # `wasm-pack --out-dir pkg-node`, the build the WASM tests load. Like `pkg`
+    # it carries a generated README that does not ship from this repository.
+    "pkg-node",
     "target",
 }
 

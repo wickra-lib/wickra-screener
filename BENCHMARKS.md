@@ -21,13 +21,20 @@ Run against fixed, in-process synthetic universes so the numbers are reproducibl
 and contain no I/O variance:
 
 ```bash
-cargo bench -p screener-bench
+cargo bench -p screener-bench                        # parallel (rayon), the default
+cargo bench -p screener-bench --no-default-features  # sequential, the WASM path
 ```
+
+The nightly `bench.yml` workflow runs **both** on a clean Linux runner and
+uploads the two together, so the cost of the sequential path is tracked beside
+the parallel one rather than assumed.
 
 ## Results
 
 Measured with `cargo bench -p screener-bench` (criterion) on a Windows x86-64
-laptop, default `parallel` (rayon) path. Figures are the median estimate; treat
+laptop, default `parallel` (rayon) path. The sequential figures are not tabulated
+here because they depend far more strongly on core count than the parallel ones
+do; the nightly run reports both, and that artifact is the place to read them. Figures are the median estimate; treat
 them as orders of magnitude, not guarantees — they vary with CPU core count and
 toolchain.
 
