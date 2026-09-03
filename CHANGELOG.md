@@ -428,5 +428,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CLI does, since the CSV loader moved there.
 - `check_readme_links.py` skips `bindings/wasm/pkg-node/`, the wasm-pack output
   the WASM tests load, which carries a generated README.
+- CODEOWNERS names an owner GitHub can resolve. It read `* @wickra-lib`, and a
+  bare org slug is not a code owner -- GitHub accepts a user, a team
+  (`@org/team`) or an email, and reports anything else as an unknown owner. The
+  file therefore parsed, showed up in the repository as configured, and requested
+  a review on no pull request that has ever been opened here. It names the
+  maintainer handle now, which `gh api .../codeowners/errors` resolves with no
+  errors. The comment in `repo-metadata.toml` that sent the org slug to
+  CODEOWNERS in the first place says what that field is actually for.
 
 [Unreleased]: https://github.com/wickra-lib/wickra-screener/commits/main
