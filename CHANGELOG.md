@@ -380,4 +380,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   OpenSSF Scorecard flagged both sites. The runner images ship a pip far newer
   than `--require-hashes` needs, so the upgrade bought nothing.
 
+### Added
+
+- `docs/FEEDS.md`: the whole side-feed model in one page — which of the seven
+  families each indicator belongs to, the batch parallel-array shape and the
+  singular per-bar `feeds` envelope (and why they differ), the market panel a
+  batch scan assembles for itself, the two ways to name a reference series, the
+  `breadth` knobs with their defaults, and how to ask a spec what it needs before
+  assembling data. Six of the seven families had no page at all: the per-bar
+  envelope, order books and derivatives were documented nowhere.
+- `ARCHITECTURE.md` gains the workspace navigation table, performance
+  characteristics, stability commitments, what is deliberately absent, and the
+  known sharp edges — the streaming screener's inability to derive the market
+  panel, the C ABI's once-per-delivered-response rule, `fuzz/` being a detached
+  workspace, the narrow coverage scope, and the release gate on `wickra-exchange`.
+- The governance and security documents carry the sections the main repository
+  has: contribution flow and succession in `GOVERNANCE.md`, the actors and a
+  threats-and-mitigations table in `THREAT_MODEL.md`, the assurance case,
+  secrets management, release verification, support timeline and remediation
+  policy in `SECURITY.md`, documentation-first and support expectations in
+  `SUPPORT.md`, per-language build instructions and the lockfile policy in
+  `CONTRIBUTING.md`, and how to make contact in `MAINTAINERS.md`.
+
+### Changed
+
+- CI rides out transient network failures instead of failing a job that then
+  needs a manual re-run: a workflow-level env block (`CARGO_NET_RETRY`, the npm
+  fetch-retry pair, `PIP_RETRIES`), a cargo pre-fetch with real backoff in all
+  fifteen Rust jobs, and the toolchain-download retry the `wasm` job was missing.
+  The block also carries `RUSTFLAGS: -D warnings`, which was previously enforced
+  only through clippy.
+- Coverage measures both feature sets and the CLI, merged into one report.
+  `folded_states` exists twice behind `#[cfg(feature = "parallel")]`, so a
+  single-configuration run left the rayon fold neither covered nor counted as
+  missing.
+- The nightly benchmark runs the sequential path as well as the parallel one.
+  `BENCHMARKS.md` described the matrix as covering both; nothing measured the
+  second.
+- `repo-metadata.toml` names this repository's own site, its discussions URL and
+  its Codecov slug, and the GitHub repository has a homepage set. The README's
+  Docs badge and closing paragraph, and `docs/README.md`, pointed a reader at
+  wickra.org for material that lives in `docs/` and on screener.wickra.org.
+
+### Fixed
+
+- `ARCHITECTURE.md` no longer says `screener-core` depends on `wickra-data`; the
+  CLI does, since the CSV loader moved there.
+- `check_readme_links.py` skips `bindings/wasm/pkg-node/`, the wasm-pack output
+  the WASM tests load, which carries a generated README.
+
 [Unreleased]: https://github.com/wickra-lib/wickra-screener/commits/main
