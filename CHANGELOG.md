@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-09-03
+
 ### Added
 
 - `screener-core`: the data-driven scan engine — a serde `ScanSpec` (expressions,
@@ -429,4 +431,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `check_readme_links.py` skips `bindings/wasm/pkg-node/`, the wasm-pack output
   the WASM tests load, which carries a generated README.
 
-[Unreleased]: https://github.com/wickra-lib/wickra-screener/commits/main
+[Unreleased]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/wickra-lib/wickra-screener/releases/tag/v0.1.0
