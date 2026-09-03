@@ -12,11 +12,15 @@ this repository behaves and have to change in the same commit the behaviour does
 | [Cookbook.md](Cookbook.md) | Worked screens |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | The internals: how a scan is folded and evaluated |
 
-The API reference for each language is generated from the source and published
-on the site rather than committed here: <https://wickra.org>. Keeping it there is
-deliberate — a second copy of the same reference in this repository would drift
-from the code that generates it, and a reader opening `docs/` would have no way
-to tell which copy was current.
+The API reference for each language is generated from the source rather than
+committed here — `cargo doc` for Rust, the `.d.ts` beside the Node binding, the
+docstrings in the Python module, the C header. Keeping a second copy in this
+repository would drift from the code that generates it, and a reader opening
+`docs/` would have no way to tell which copy was current.
+
+The screener's site, with the in-browser demo and the benchmark figures, is at
+<https://screener.wickra.org>. The indicator library the screener resolves names
+through documents itself at <https://docs.wickra.org>.
 
 What stays here is what a generator cannot produce: the meaning of a field, the
 reason a case is refused rather than answered, and the worked examples.

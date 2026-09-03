@@ -19,7 +19,7 @@
 [![OpenSSF Scorecard](https://raw.githubusercontent.com/wickra-lib/.github/main/profile/badges/wickra-screener/scorecard.svg)](https://scorecard.dev/viewer/?uri=github.com/wickra-lib/wickra-screener)
 [![OpenSSF Best Practices](https://raw.githubusercontent.com/wickra-lib/.github/main/profile/badges/wickra-screener/best-practices.svg)](https://www.bestpractices.dev)
 [![Build provenance](https://raw.githubusercontent.com/wickra-lib/.github/main/profile/badges/wickra-screener/provenance.svg)](https://github.com/wickra-lib/wickra-screener/attestations)
-[![Docs](https://raw.githubusercontent.com/wickra-lib/.github/main/profile/badges/wickra-screener/docs.svg)](https://wickra.org)
+[![Docs](https://raw.githubusercontent.com/wickra-lib/.github/main/profile/badges/wickra-screener/docs.svg)](https://github.com/wickra-lib/wickra-screener/tree/main/docs)
 [![Verified across 10 languages](https://raw.githubusercontent.com/wickra-lib/.github/main/profile/badges/wickra-screener/verified.svg)](golden/)
 [![Live demo](https://img.shields.io/badge/live%20demo-live.wickra.org-3b82f6)](https://live.wickra.org)
 
@@ -277,8 +277,11 @@ data-driven core with a CLI and the same ten-language binding surface:
 - [**wickra-embed**](https://github.com/wickra-lib/wickra-embed) — allocation-free, `no_std` streaming indicators for bare-metal and HFT, byte-for-byte identical to the core
 - [**wickra-pico**](https://github.com/wickra-lib/wickra-pico) — the O(1) indicator core running bare-metal on a $5 Raspberry Pi Pico — the LED blinks on the EMA cross
 
-Docs at [docs.wickra.org](https://docs.wickra.org); the marketing site and
-in-browser demo at [wickra.org](https://wickra.org).
+The screener's own guides live in [`docs/`](docs/) beside the code; its site,
+with the in-browser demo and the benchmark figures, is at
+[screener.wickra.org](https://screener.wickra.org). The indicator library's
+reference is at [docs.wickra.org](https://docs.wickra.org) and the org landing
+page at [wickra.org](https://wickra.org).
 
 ## Contributing
 
