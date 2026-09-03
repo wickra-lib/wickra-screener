@@ -41,7 +41,7 @@ categories = ["finance", "command-line-utilities"]
 # incompatible ones.
 wickra-core = "1.0"
 wickra-data = "1.0"
-wickra-exchange = { git = "https://github.com/wickra-lib/wickra-exchange", rev = "73511aa99978bc34c5e65de885b9a1f653565155", version = "0.1" }
+wickra-exchange = { git = "https://github.com/wickra-lib/wickra-exchange", rev = "1fc831144a8ab82b360cb3aeaca88e7ef33efc01", version = "0.1" }
 # The only name -> indicator registry in the ecosystem: the backtester's factory
 # resolves an indicator by name + params into an object-safe EvalIndicator, and
 # `registry::feed_of` reports which feed family that indicator consumes. Now on

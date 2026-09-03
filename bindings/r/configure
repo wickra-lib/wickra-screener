@@ -1,0 +1,118 @@
+#!/bin/sh
+# Resolve the wickra-screener C ABI (header + shared library) for the Unix build.
+#
+# Until this existed the package built only where something had already set
+# WKSCREEN_INC and WKSCREEN_LIB -- which is to say, only in this repository's CI. A user
+# running install.packages() got a compiler error about a missing header.
+#
+# Self-contained by default: download the prebuilt wickra-screener-c-<triple>.tar.gz
+# release asset matching this package's version and stage the shared library into
+# src/, so the compiled object links against it and bundles it (via
+# install.libs.R), found post-install through an rpath ($ORIGIN on Linux,
+# @loader_path on macOS). Set WKSCREEN_INC + WKSCREEN_LIB to build against a locally
+# built C ABI instead (the dev override; e.g. `cargo build -p wickra-screener-c
+# --release`). Download and extraction use base R, which is always present at
+# build time, so there is no curl/wget system dependency.
+set -e
+
+inc=""
+lib=""
+
+# A freshly-cut GitHub release can briefly return 404 while its assets propagate
+# across the CDN, and a transient network blip should not fail the build either.
+# Retry base R's download.file with a backoff (~2 min total) rather than giving
+# up on the first miss.
+wkscreen_download() {
+  _url="$1"
+  _dest="$2"
+  _attempt=1
+  while [ "${_attempt}" -le 6 ]; do
+    if "${R_HOME}/bin/Rscript" -e "download.file('${_url}', '${_dest}', mode = 'wb', quiet = TRUE)"; then
+      return 0
+    fi
+    echo "wickra-screener: download attempt ${_attempt}/6 failed (${_url}); the release asset may still be propagating -- retrying in 20s..."
+    sleep 20
+    _attempt=$((_attempt + 1))
+  done
+  echo "wickra-screener: failed to download ${_url} after 6 attempts"
+  return 1
+}
+
+# WebAssembly (r-universe's webR target) is not supported and says so rather
+# than failing further in with a link error. The scan core itself compiles to
+# wasm -- the wasm binding proves it, with default features off -- but no
+# emscripten C ABI archive is published for this configure to fetch, and
+# building one from source here would compile a toolchain path nothing tests.
+# The browser build is shipped as the wasm npm package instead.
+if [ "$(uname -s)" = "Emscripten" ]; then
+  echo "wickra-screener: no WebAssembly build -- no emscripten C ABI archive is published."
+  echo "wickra-screener: the browser build is published separately as the wickra-screener-wasm npm package."
+  exit 1
+fi
+
+if [ -n "${WKSCREEN_INC}" ] && [ -n "${WKSCREEN_LIB}" ]; then
+  echo "wickra-screener: using the C ABI from WKSCREEN_INC / WKSCREEN_LIB (dev override)"
+  inc="${WKSCREEN_INC}"
+  lib="${WKSCREEN_LIB}"
+else
+  version=$(sed -n 's/^Version:[[:space:]]*//p' DESCRIPTION)
+  os=$(uname -s)
+  arch=$(uname -m)
+  case "${os}" in
+    Linux)
+      case "${arch}" in
+        x86_64) triple="x86_64-unknown-linux-gnu" ;;
+        aarch64 | arm64) triple="aarch64-unknown-linux-gnu" ;;
+        *) echo "wickra-screener: unsupported Linux arch '${arch}' -- set WKSCREEN_INC/WKSCREEN_LIB"; exit 1 ;;
+      esac
+      ;;
+    Darwin)
+      case "${arch}" in
+        x86_64) triple="x86_64-apple-darwin" ;;
+        arm64 | aarch64) triple="aarch64-apple-darwin" ;;
+        *) echo "wickra-screener: unsupported macOS arch '${arch}' -- set WKSCREEN_INC/WKSCREEN_LIB"; exit 1 ;;
+      esac
+      ;;
+    *)
+      echo "wickra-screener: unsupported OS '${os}' -- set WKSCREEN_INC/WKSCREEN_LIB"
+      exit 1
+      ;;
+  esac
+  url="https://github.com/wickra-lib/wickra-screener/releases/download/v${version}/wickra-screener-c-${triple}.tar.gz"
+  echo "wickra-screener: downloading the C ABI ${triple} for v${version}"
+  wkscreen_download "${url}" "src/wickra-screener-c.tar.gz" || exit 1
+  "${R_HOME}/bin/Rscript" -e "untar('src/wickra-screener-c.tar.gz', exdir = 'src/wickra-screener-c')"
+  inc="src/wickra-screener-c/wickra-screener-c-${triple}/include"
+  lib="src/wickra-screener-c/wickra-screener-c-${triple}/lib"
+fi
+
+# Stage the header and the platform shared library into src/ so the package
+# object links with -L. -lwickra_screener and install.libs.R bundles the lib.
+cp "${inc}/wickra_screener.h" src/wickra_screener.h
+staged=""
+for f in libwickra_screener.so libwickra_screener.dylib; do
+  if [ -f "${lib}/${f}" ]; then
+    cp "${lib}/${f}" "src/${f}"
+    staged="${f}"
+  fi
+done
+if [ -z "${staged}" ]; then
+  echo "wickra-screener: no libwickra_screener.so/.dylib found under ${lib}"
+  exit 1
+fi
+
+# rpath so the bundled library is found next to the package object after install.
+case "$(uname -s)" in
+  Darwin)
+    rpath="-Wl,-rpath,@loader_path"
+    # Normalise the dylib id to @rpath so @loader_path resolution applies.
+    install_name_tool -id "@rpath/${staged}" "src/${staged}" 2>/dev/null || true
+    ;;
+  *)
+    rpath="-Wl,-rpath,'\$\$ORIGIN'"
+    ;;
+esac
+
+sed "s|@WKSCREEN_RPATH@|${rpath}|" src/Makevars.in > src/Makevars
+echo "wickra-screener: configured (bundled ${staged})"
+exit 0

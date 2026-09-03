@@ -60,13 +60,12 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9
-        with:
-          languages: ${{ matrix.language }}
-          build-mode: ${{ matrix.build-mode }}
-          config-file: ./.github/codeql/codeql-config.yml
-
+      # Before `init`, not after. CodeQL prepares to trace the compiler it can
+      # see at initialisation; a toolchain installed afterwards is a different
+      # one than the one that ends up building, and the analysis silently
+      # describes something that was never compiled. A build step belongs after
+      # init -- being traced is the point -- but the toolchain it uses does not.
+      #
       # The pom targets release 22 and the runner's default JDK is older, so the
       # compile fails without this. Same toolchain the `java` CI job uses.
       - name: Set up the JDK the pom targets
@@ -76,6 +75,13 @@ jobs:
           distribution: temurin
           java-version: "25"
           cache: maven
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          config-file: ./.github/codeql/codeql-config.yml
 
       # The binding compiles on its own: it is a thin wrapper over the C ABI and
       # the native library is only needed to run, not to build.

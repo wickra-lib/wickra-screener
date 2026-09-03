@@ -48,6 +48,19 @@ bindings/r/.rlib/
 bindings/r/src/*.o
 bindings/r/src/*.so
 bindings/r/src/*.dll
+# configure / configure.win stage the C ABI into src/ at install time. They are
+# build output, not sources: .Rbuildignore keeps them out of the R tarball, and
+# these keep them out of the index, where a plain `git add -A` after a local
+# install would otherwise pick them up.
+bindings/r/src/*.dylib
+bindings/r/src/*.dll.a
+bindings/r/src/*.def
+bindings/r/src/wickra_screener.h
+bindings/r/src/Makevars
+bindings/r/src/symbols.rds
+bindings/r/src/dlltool.log
+bindings/r/src/wickra-screener-c/
+bindings/r/src/wickra-screener-c.tar.gz
 bindings/r/..Rcheck/
 
 # Local secrets — never commit credentials.

@@ -1,10 +1,17 @@
-# Keep compiled artifacts out of the R source tarball built by `R CMD build`.
-# The package links the C ABI out-of-tree, so only the glue objects and any
-# locally built shared library live under src/ — none of them belong in a
-# distributable source package; they are produced at install.
+# Keep everything configure stages or the compiler produces out of the R source
+# tarball built by `R CMD build`. The package is source-distributed: configure
+# fetches the C ABI at install time (or takes it from WKSCREEN_INC / WKSCREEN_LIB), so
+# none of these belong in the distributable.
+^src/wickra_screener\.h$
+^src/wickra_screener\.dll$
+^src/wickra_screener\.def$
+^src/libwickra_screener\.dll\.a$
+^src/libwickra_screener\.(so|dylib)$
+^src/wickra-screener-c\.tar\.gz$
+^src/wickra-screener-c$
+^src/Makevars$
 ^src/.*\.o$
-^src/.*\.so$
-^src/.*\.dll$
-^src/.*\.dylib$
+^src/wickrascreener\.(dll|so|dylib)$
 ^src/symbols\.rds$
+^src/dlltool\.log$
 ^\.gitignore$

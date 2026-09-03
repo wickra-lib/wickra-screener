@@ -2822,7 +2822,7 @@ dependencies = [
 [[package]]
 name = "wickra-exchange"
 version = "0.1.0"
-source = "git+https://github.com/wickra-lib/wickra-exchange?rev=73511aa99978bc34c5e65de885b9a1f653565155#73511aa99978bc34c5e65de885b9a1f653565155"
+source = "git+https://github.com/wickra-lib/wickra-exchange?rev=1fc831144a8ab82b360cb3aeaca88e7ef33efc01#1fc831144a8ab82b360cb3aeaca88e7ef33efc01"
 dependencies = [
  "futures-util",
  "reqwest",
@@ -2834,7 +2834,7 @@ dependencies = [
 [[package]]
 name = "wickra-exchange-core"
 version = "0.1.0"
-source = "git+https://github.com/wickra-lib/wickra-exchange?rev=73511aa99978bc34c5e65de885b9a1f653565155#73511aa99978bc34c5e65de885b9a1f653565155"
+source = "git+https://github.com/wickra-lib/wickra-exchange?rev=1fc831144a8ab82b360cb3aeaca88e7ef33efc01#1fc831144a8ab82b360cb3aeaca88e7ef33efc01"
 dependencies = [
  "base64",
  "hex",

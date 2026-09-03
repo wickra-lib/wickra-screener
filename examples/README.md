@@ -16,6 +16,7 @@ shared `data/` directory to load (the golden fixtures live in [`../golden/`](../
 | .NET | [`csharp/Scan/`](csharp/Scan/) | `dotnet run --project examples/csharp/Scan` |
 | Java | [`java/Scan.java`](java/Scan.java) | see the header comment |
 | R | [`r/scan.R`](r/scan.R) | `Rscript examples/r/scan.R` |
+| WASM | [`wasm/scan.html`](wasm/scan.html) | serve the repository root, open in a browser |
 
 The native bindings (Python, Node.js) load their own compiled library. The bindings
 that go through the C ABI (Go, .NET, Java, R, and the C/C++ example itself) need the
