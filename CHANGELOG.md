@@ -372,4 +372,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   target, but a declared bound makes a hand-edit fail at compile time rather than
   at install time on the 3.9 runner. The lock is byte-identical.
 
+### Security
+
+- CI no longer fetches an unpinned pip before installing the hash-locked
+  tooling. `pip install --upgrade pip` reached PyPI without a pin two steps
+  before the `--require-hashes` install that exists to avoid exactly that, and
+  OpenSSF Scorecard flagged both sites. The runner images ship a pip far newer
+  than `--require-hashes` needs, so the upgrade bought nothing.
+
 [Unreleased]: https://github.com/wickra-lib/wickra-screener/commits/main
