@@ -1,5 +1,18 @@
 # cargo-deny configuration — supply-chain gate (advisories, licenses, bans, sources).
 
+[graph]
+# Scan the feature-expanded graph, not just the default one. Without this the
+# gate reads a narrower dependency set than the repository ships: the exchange
+# tree arrives under the optional `live` universe feature, so cargo-deny never
+# reached it, and two crates crates.io had yanked -- `chacha20` and `wnaf`, both
+# below `p256` in that tree -- sat in `Cargo.lock` while the job reported ok.
+#
+# The `webpki-roots` licence exception further down is the same story from the
+# other side: its own comment says it exists for the `live` tree, which means it
+# was never evaluated either. An exception nothing reaches is not policy, and a
+# clean result from a filter that matched nothing is not a proof.
+all-features = true
+
 [advisories]
 version = 2
 yanked = "deny"

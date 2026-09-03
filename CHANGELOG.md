@@ -437,4 +437,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   errors. The comment in `repo-metadata.toml` that sent the org slug to
   CODEOWNERS in the first place says what that field is actually for.
 
+### Security
+
+- cargo-deny scans the feature-expanded graph. It was reading the default one,
+  which is narrower than what this repository ships: the exchange tree arrives
+  under the optional `live` universe feature, so the gate never reached it. Two
+  crates crates.io had yanked, `chacha20` and `wnaf`, both below `p256` in that
+  tree, sat in `Cargo.lock` while the supply-chain job reported ok. The
+  `webpki-roots` licence exception is the same gap seen from the other side --
+  its own comment says it exists for the `live` tree, so it was never evaluated
+  either. Both yanked crates are now off their withdrawn releases (0.10.2 and
+  0.14.1, same APIs), and all four checks pass against the wider graph.
+
 [Unreleased]: https://github.com/wickra-lib/wickra-screener/commits/main
