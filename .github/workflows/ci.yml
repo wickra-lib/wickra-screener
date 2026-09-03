@@ -267,6 +267,72 @@ jobs:
       - name: Published packages carry their licence texts
         run: python3 scripts/check_license_copies.py
 
+      # Every other binding is compiled from this tree in the same job, so a
+      # wrapper cannot disagree with the ABI it calls. R is the exception: the
+      # hand-written glue is compiled against whatever header configure staged,
+      # and nothing else proves the two match. R CMD check does not see it --
+      # a call with the wrong arity still links by name.
+      - name: The R wrapper matches the C ABI
+        run: python3 scripts/check_r_abi_skew.py
+
+  semver:
+    name: Public API (cargo-semver-checks)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30 # backstop: it builds rustdoc JSON for each crate and its baseline
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Rust toolchain
+        uses: ./.github/actions/setup-rust
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+      - name: Install cargo-semver-checks
+        uses: taiki-e/install-action@742a3317eac7bd62f91cd888b4eead5e784ba833 # v2.87.1
+        timeout-minutes: 10 # fail fast on a stuck download instead of hanging the job
+        with:
+          tool: cargo-semver-checks
+
+      # The published API is a promise and the version number says what may
+      # change: a patch release must not move the public surface. It compiles
+      # here and breaks at the consumer, which is the failure no other job sees.
+      #
+      # `check-release` compares against the newest version already on
+      # crates.io, and neither crate has been published -- both return 404
+      # today. Running it now fails on the missing baseline, which says nothing
+      # about the code. So the baseline is looked up first and the check skips,
+      # loudly, until there is something to compare against; from the first
+      # release onwards it runs without anyone remembering to switch it on.
+      #
+      # Deliberately not `continue-on-error`: that would hide a real API break
+      # later, which is the one thing this job exists to catch.
+      #
+      # Named crates rather than --workspace: the bench and binding crates are
+      # `publish = false`, so they have no baseline and promise nothing.
+      - name: Check the published crates
+        shell: bash
+        run: |
+          set -euo pipefail
+          published=()
+          for crate in screener-core wickra-screener; do
+            code=$(curl -sS -o /dev/null -w "%{http_code}" \
+              -H "User-Agent: wickra-screener-ci" \
+              "https://crates.io/api/v1/crates/$crate")
+            if [ "$code" = "200" ]; then
+              published+=("-p" "$crate")
+            else
+              echo "::notice::$crate is not on crates.io yet (HTTP $code); no baseline to compare against"
+            fi
+          done
+          if [ "${#published[@]}" -eq 0 ]; then
+            echo "no crate has been published yet -- nothing to compare. This job starts checking by itself once the first release lands."
+            exit 0
+          fi
+          cargo semver-checks check-release "${published[@]}"
+
   coverage:
     name: Coverage
     runs-on: ubuntu-latest
@@ -472,6 +538,26 @@ jobs:
           out=$(node examples/node/scan.js)
           echo "$out"
           echo "$out" | grep -q '"symbol":"BBB"'
+
+      # The browser demo embeds an ES module, and nothing else in this repository
+      # parses a script inside an HTML file. Extract it and parse-check it, so a
+      # broken edit to the in-page logic fails here rather than in a reader's
+      # browser. It cannot be *run* here for the same reason the others can: it
+      # needs a DOM and a fetched .wasm, which is a headless browser, not a step.
+      - name: WASM demo module script
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          count=0
+          for f in examples/wasm/*.html; do
+            node -e 'const fs=require("fs");const h=fs.readFileSync(process.argv[1],"utf8");const m=h.match(/<script type="module">([\s\S]*?)<\/script>/);if(!m){console.error("no <script type=module> in "+process.argv[1]);process.exit(1);}fs.writeFileSync("module-check.mjs",m[1]);' "$f"
+            echo "node --check (module of) $f"
+            node --check module-check.mjs
+            count=$((count + 1))
+          done
+          rm -f module-check.mjs
+          echo "checked $count WASM .html module script(s)"
 
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -693,6 +779,34 @@ jobs:
         run: cd bindings/node && git diff --exit-code -- index.js index.d.ts
       - name: Run Node tests
         run: cd bindings/node && node --test
+      # `files` lists `*.node`, so the main tarball is supposed to carry the
+      # native binary rather than resolve it through the optionalDependencies.
+      # Nothing held that promise: a name dropped from `files` is not an error,
+      # it is a package that installs and then cannot load. Check the tarball
+      # the release would upload, on the platform whose binary it carries.
+      - name: The npm tarball carries the module it promises
+        shell: bash
+        working-directory: bindings/node
+        run: |
+          # The ${...} below are JavaScript template literals inside node -e,
+          # not shell expansions -- single quotes are what keeps the shell out
+          # of them. The reason goes on its own line: shellcheck reads anything
+          # after the directive as further directives and reports SC1072 on it.
+          # shellcheck disable=SC2016
+          npm pack --dry-run --json | node -e '
+            const chunks = [];
+            process.stdin.on("data", c => chunks.push(c)).on("end", () => {
+              const pkg = JSON.parse(chunks.join(""))[0];
+              const names = pkg.files.map(f => f.path);
+              const required = ["index.js", "index.d.ts", "package.json"];
+              const missing = required.filter(n => !names.includes(n));
+              if (!names.some(n => n.endsWith(".node"))) missing.push("the native .node binary");
+              if (missing.length) {
+                console.error(`::error::${pkg.name} would publish without ${missing.join(", ")}`);
+                process.exit(1);
+              }
+              console.log(`${pkg.name}: ${names.length} files, entry points present`);
+            });'
 
   wasm:
     name: WASM
