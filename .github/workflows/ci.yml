@@ -342,6 +342,8 @@ jobs:
         with:
           toolchain: nightly
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          workspaces: fuzz
 
       - name: Warm cargo registry (retry transient DNS/registry flakes)
         shell: bash
@@ -358,8 +360,6 @@ jobs:
           done
           echo "::error::cargo fetch still failing after 5 attempts"
           exit 1
-        with:
-          workspaces: fuzz
       - name: Install cargo-fuzz
         uses: taiki-e/install-action@742a3317eac7bd62f91cd888b4eead5e784ba833 # v2.87.1
         with:
