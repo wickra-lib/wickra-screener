@@ -299,13 +299,25 @@ jobs:
         uses: taiki-e/install-action@742a3317eac7bd62f91cd888b4eead5e784ba833 # v2.87.1
         with:
           tool: cargo-llvm-cov
-      # Measure the core in its sequential (no rayon) configuration — the scan is
-      # byte-identical either way, and this keeps coverage deterministic.
-      - name: Generate coverage (lcov)
+      # Both feature sets, merged into one report, and the CLI alongside the
+      # core. `folded_states` exists twice behind `#[cfg(feature = "parallel")]`,
+      # so a single-configuration run compiles only one of the two and the other
+      # is neither covered nor counted as missing -- it simply is not there. The
+      # two runs write profiles without reporting, and the third merges them, so
+      # the rayon fold and the sequential fold both appear.
+      #
+      # The CLI is measured too: it owns the CSV universe loader and the report
+      # rendering, which no other job's coverage sees.
+      - name: Generate coverage (sequential profile)
         run: >
-          cargo llvm-cov --no-default-features
-          -p screener-core
-          --lcov --output-path lcov.info
+          cargo llvm-cov --no-report --no-default-features
+          -p screener-core -p wickra-screener
+      - name: Generate coverage (parallel profile)
+        run: >
+          cargo llvm-cov --no-report
+          -p screener-core -p wickra-screener
+      - name: Merge into one lcov report
+        run: cargo llvm-cov report --lcov --output-path lcov.info
       - name: Upload to Codecov
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:

@@ -8,6 +8,7 @@ this repository behaves and have to change in the same commit the behaviour does
 | [CONDITIONS.md](CONDITIONS.md) | The shape of a `ScanSpec`: expressions, conditions, ranking, limits |
 | [INDICATORS.md](INDICATORS.md) | Naming an indicator, its parameters, its warmup, and which side feed it needs |
 | [CROSS_SECTION.md](CROSS_SECTION.md) | Rank, percentile and z-score across the universe; breadth; the market panel the screener assembles |
+| [FEEDS.md](FEEDS.md) | The side feeds: which indicator needs what, the batch and per-bar shapes, and the panel the screener builds itself |
 | [STREAMING.md](STREAMING.md) | Batch against streaming, and where the two are identical |
 | [Cookbook.md](Cookbook.md) | Worked screens |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | The internals: how a scan is folded and evaluated |
