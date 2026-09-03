@@ -49,6 +49,19 @@ R**, so a developer in any language runs the same screen.
 - **Streaming** — `feed(symbol, candle)` + `evaluate()`, O(1) per tick, for a live scan over the current state.
 - **Cross-section & breadth** — rank, percentile, z-score and market-breadth conditions that see every symbol of a bar at once.
 
+```rust
+use screener_core::{scan_batch, ScanSpec, Screener};
+
+// Batch: fold every symbol's full history, evaluate at the last bar.
+let spec: ScanSpec = serde_json::from_str(spec_json)?;
+let report = scan_batch(universe, &spec)?;
+
+// Streaming: the same spec, O(1) per tick, evaluated against the current state.
+let mut screener = Screener::new(spec_json)?;
+screener.feed("BTCUSDT", &candle)?;
+let report = screener.evaluate();
+```
+
 ## Status
 
 **Pre-release — functionally complete, CI-verified, not yet published.** The core,
@@ -240,7 +253,7 @@ to be read before it is committed.
 
 - **Rust** ≥ 1.86 (workspace MSRV; the Node binding needs ≥ 1.88).
 - Binding toolchains as needed: Node ≥ 22, Python ≥ 3.9, a C toolchain, .NET 8,
-  JDK 22+, Go 1.23, R — see each `bindings/<lang>/README.md`.
+  JDK 22+, Go 1.23, R ≥ 2.10 — see each `bindings/<lang>/README.md`.
 
 ## Benchmarks
 
