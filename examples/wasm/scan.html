@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>wickra-screener WASM — scan</title>
+  <style>
+    body { font-family: ui-sans-serif, system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; color: #1d1d1d; }
+    h1 { margin-bottom: .25rem; }
+    .meta { color: #666; margin-top: 0; }
+    table { border-collapse: collapse; width: 100%; margin-top: 1rem; font-variant-numeric: tabular-nums; }
+    th, td { border: 1px solid #ddd; padding: .5rem .75rem; text-align: right; }
+    th:first-child, td:first-child { text-align: left; }
+    th { background: #fafafa; }
+    code { background: #f4f4f4; padding: .1rem .25rem; border-radius: .2rem; font-size: .9em; }
+    pre { background: #f6f8fa; padding: .75rem; border-radius: .3rem; overflow-x: auto; }
+    button { padding: .5rem 1rem; }
+    #status { margin-top: 1rem; color: #666; }
+  </style>
+</head>
+<body>
+  <h1>wickra-screener WASM — scan</h1>
+  <p class="meta">
+    The same example every other language carries: build a screener from a spec
+    (<code>close &gt; 10</code>), scan a two-symbol universe (<code>AAA</code> at
+    5, <code>BBB</code> at 15) and print the report, so <code>BBB</code> matches.
+    A condition is data rather than code, which is why this page runs the
+    identical spec bytes as <code>examples/node/scan.js</code>.
+  </p>
+
+  <p><button id="go" disabled>Run scan</button></p>
+  <p id="status">Loading WASM module…</p>
+
+  <table id="matches" hidden>
+    <thead><tr><th>Symbol</th><th>Score</th><th>Explaining values</th></tr></thead>
+    <tbody></tbody>
+  </table>
+
+  <pre id="raw" hidden></pre>
+
+  <script type="module">
+    import init, { Screener, version }
+      from "../../bindings/wasm/pkg/wickra_screener_wasm.js";
+
+    const SPEC = JSON.stringify({
+      universe: ["AAA", "BBB"],
+      condition: {
+        type: "cmp",
+        left: { kind: "price", field: "close" },
+        op: "gt",
+        right: { kind: "const", value: 10.0 },
+      },
+    });
+
+    const candle = (close) => ({
+      time: 1, open: close, high: close, low: close, close, volume: 1.0,
+    });
+
+    const status = document.getElementById("status");
+    const go = document.getElementById("go");
+
+    function run() {
+      // A fresh screener per run: it carries per-symbol indicator state, so
+      // reusing one across clicks would fold the same candles in twice and the
+      // second report would not match the inputs on screen.
+      const screener = new Screener(SPEC);
+      const response = screener.command(JSON.stringify({
+        cmd: "scan",
+        data: { AAA: [candle(5.0)], BBB: [candle(15.0)] },
+      }));
+      const report = JSON.parse(response);
+
+      const body = document.querySelector("#matches tbody");
+      body.replaceChildren();
+      for (const match of report.matches ?? []) {
+        const tr = document.createElement("tr");
+        const values = Object.entries(match.values ?? {})
+          .map(([k, v]) => `${k}=${v}`).join(", ");
+        for (const cell of [match.symbol, match.score ?? "", values]) {
+          const td = document.createElement("td");
+          td.textContent = String(cell);
+          tr.append(td);
+        }
+        body.append(tr);
+      }
+      document.getElementById("matches").hidden = false;
+
+      const raw = document.getElementById("raw");
+      raw.textContent = JSON.stringify(report, null, 2);
+      raw.hidden = false;
+
+      status.textContent =
+        `${(report.matches ?? []).length} match(es) — wickra-screener ${version()}.`;
+    }
+
+    await init();
+    status.textContent = `Module ready — wickra-screener ${version()}.`;
+    go.disabled = false;
+    go.addEventListener("click", () => {
+      try {
+        run();
+      } catch (err) {
+        status.textContent = `Error: ${err}`;
+      }
+    });
+  </script>
+</body>
+</html>
