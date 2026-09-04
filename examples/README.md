@@ -45,7 +45,7 @@ there is no rpath.
 Every example prints the version and the scan report, for example:
 
 ```text
-wickra-screener 0.1.2
+wickra-screener 0.1.3
 {"matches":[{"symbol":"BBB","matched":true,"values":{"price.close":15.0}}],"scanned":2}
 ```
 
