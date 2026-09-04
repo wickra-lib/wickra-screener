@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-09-04
+
+`0.1.2` published to all seven registries and r-universe still built **0 of 13**
+platform binaries. r-universe builds from the latest release, so the fix only
+reaches it through a tag.
+
+### Fixed
+
+- **The R package shipped tests that reason about the repository.**
+  `tests/run_tests.R` carried two golden-corpus sections. The parity block
+  degrades to a skip when the corpus is absent; the streaming block does the
+  opposite on purpose, stopping with `golden fixtures not found; the streaming
+  comparison would test nothing` and a comment arguing that a missing corpus is
+  a broken checkout rather than a phase that has not arrived.
+
+  That reasoning is correct in a repository and false in a tarball, where the
+  absence is normal — and `R CMD check` runs everything under `tests/` from the
+  built tarball, which is what r-universe runs on every platform.
+
+  Both sections move to `tests/golden.R`, `.Rbuildignore` keeps it out of the
+  tarball, and `ci.yml` runs it explicitly from the repository root. Softening
+  the stop would have been the smaller change and the wrong one: a shipped test
+  should not reason about the repository at all, which is the shape the other
+  four repositories now share.
+
+
 ## [0.1.2] - 2026-09-04
 
 `0.1.1` reached crates.io, PyPI, npm and NuGet. Maven Central rejected it and
@@ -520,7 +546,8 @@ three that worked went ahead anyway. There is no GitHub Release for `0.1.0`.
   either. Both yanked crates are now off their withdrawn releases (0.10.2 and
   0.14.1, same APIs), and all four checks pass against the wider graph.
 
-[Unreleased]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/wickra-lib/wickra-screener/releases/tag/v0.1.0

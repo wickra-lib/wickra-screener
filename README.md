@@ -63,7 +63,7 @@ let report = screener.evaluate();
 
 ## Status
 
-**0.1.2 — the first complete release.** The core, the CLI, all ten language bindings, the
+**0.1.3 — the current release.** The core, the CLI, all ten language bindings, the
 byte-exact golden corpus, property + fuzz tests, benchmarks and one runnable
 example per language are in place and green across the full CI matrix
 (10 languages × 3 OS). [ROADMAP.md](ROADMAP.md) has what is done, what is open
