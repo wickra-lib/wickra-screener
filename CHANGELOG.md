@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-09-04
+
+`0.1.1` reached crates.io, PyPI, npm and NuGet. Maven Central rejected it and
+there is no GitHub Release. Both had the same shape as everything else this
+repository has hit: a line that could only ever run during a release.
+
+### Fixed
+
+- **Maven Central rejected the deployment over missing POM metadata.** The
+  bundle was signed, uploaded and validated, and then came back with `SCM URL is
+  not defined` and `Developers information is missing`. `<scm>` and
+  `<developers>` are required and every sibling repository already had them;
+  this POM had neither. Nothing was published, so nothing has to be superseded.
+- **The NuGet job failed after a successful push.** `release.yml` uploaded the
+  `nuget-package` artifact twice under the same name, and the second one can only
+  ever return `409 Conflict: an artifact with this name already exists on the
+  workflow run`. At `0.1.0` the job died earlier, on the missing trust policy, so
+  the duplicate had never run; at `0.1.1` the push succeeded and this line failed
+  the job anyway. `github-release` depends on it, so the GitHub Release went with
+  it while the package was already on NuGet.
+- **A green Maven job did not mean the jar was public.** The publishing plugin
+  stopped at `validated` and printed "to finish publishing visit …" while the
+  build reported success. `<waitUntil>published</waitUntil>` makes the job wait
+  for the deployment to actually publish, so a failure after validation is
+  visible here rather than nowhere.
+
+
 ## [0.1.1] - 2026-09-04
 
 The first release this repository can publish completely. `0.1.0` reached PyPI,
@@ -493,6 +520,7 @@ three that worked went ahead anyway. There is no GitHub Release for `0.1.0`.
   either. Both yanked crates are now off their withdrawn releases (0.10.2 and
   0.14.1, same APIs), and all four checks pass against the wider graph.
 
-[Unreleased]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/wickra-lib/wickra-screener/releases/tag/v0.1.0

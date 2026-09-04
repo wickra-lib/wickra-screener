@@ -1,7 +1,7 @@
 Package: wickrascreener
 Type: Package
 Title: Data-Driven Multi-Symbol Scan Core
-Version: 0.1.1
+Version: 0.1.2
 Authors@R: person("kingchenc", role = c("aut", "cre"), email = "support@wickra.org")
 Description: R bindings for wickra-screener over its C ABI hub: build a Screener
     from a spec JSON, drive it with command JSON and read back scan reports - the

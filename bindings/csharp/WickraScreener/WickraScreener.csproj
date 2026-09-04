@@ -10,7 +10,7 @@
     <AssemblyName>Wickra.Screener</AssemblyName>
 
     <PackageId>Wickra.Screener</PackageId>
-    <Version>0.1.1</Version>
+    <Version>0.1.2</Version>
     <Authors>kingchenc</Authors>
     <Description>The data-driven multi-symbol scan core for .NET over the Wickra C ABI: build a Screener from a spec, drive it with commands, read back scan reports.</Description>
     <PackageLicenseExpression>MIT OR Apache-2.0</PackageLicenseExpression>
