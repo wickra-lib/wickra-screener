@@ -31,17 +31,19 @@ keywords = ["trading", "screener", "indicators", "streaming", "finance"]
 categories = ["finance", "command-line-utilities"]
 
 [workspace.dependencies]
-# Wickra ecosystem. wickra-core and wickra-data ship on crates.io; the exchange
-# facade is consumed from git until its first crates.io release (its tag is
-# USER-GO gated) and is used only by the optional `live` universe feature. A
-# `version` is pinned alongside `git` so the dependency is not a wildcard
-# (cargo-deny's `bans.wildcards = deny`).
+# Wickra ecosystem, all of it from crates.io.
 # Held at the same major as the copy `wickra-backtest-core` resolves, so the
 # tree carries one `wickra-core` and one set of indicator types rather than two
 # incompatible ones.
 wickra-core = "1.0"
 wickra-data = "1.0"
-wickra-exchange = { git = "https://github.com/wickra-lib/wickra-exchange", rev = "1fc831144a8ab82b360cb3aeaca88e7ef33efc01", version = "0.1" }
+# The exchange facade, used only by the optional `live` universe feature. It was
+# consumed from a git rev until its first crates.io release; that release is out,
+# so the pin is a plain version. A release of this repository could not have been
+# published while it stood: `cargo publish` resolves the registry version, not
+# the rev, so the crate that shipped would not have been the crate that was
+# tested.
+wickra-exchange = "0.1.1"
 # The only name -> indicator registry in the ecosystem: the backtester's factory
 # resolves an indicator by name + params into an object-safe EvalIndicator, and
 # `registry::feed_of` reports which feed family that indicator consumes. Now on
