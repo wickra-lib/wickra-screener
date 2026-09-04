@@ -15,5 +15,5 @@ name = "scan"
 path = "src/main.rs"
 
 [dependencies]
-screener-core = { workspace = true }
+wickra-screener-core = { workspace = true }
 serde_json = { workspace = true }

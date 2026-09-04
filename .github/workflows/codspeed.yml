@@ -62,11 +62,11 @@ jobs:
         with:
           tool: cargo-codspeed
 
-      # screener-bench is the only crate carrying benches, and it is named rather
+      # wickra-screener-bench is the only crate carrying benches, and it is named rather
       # than --workspace so a bench added elsewhere has to be added here too,
       # deliberately, instead of silently doubling this job's cost.
       - name: Build the benchmarks
-        run: cargo codspeed build -p screener-bench
+        run: cargo codspeed build -p wickra-screener-bench
 
       - name: Run them under instrumentation
         uses: CodSpeedHQ/action@373d6868929f444bc08d901fd0eb0ad52a8875ea # v5.2.1
@@ -77,4 +77,4 @@ jobs:
           # runner is not -- there the timing would carry exactly the noise this
           # job exists to avoid.
           mode: simulation
-          run: cargo codspeed run -p screener-bench
+          run: cargo codspeed run -p wickra-screener-bench

@@ -10,7 +10,7 @@ at a time.
 full candle history and evaluates the condition tree at the last bar:
 
 ```rust
-use screener_core::{ScanSpec, scan_batch};
+use wickra_screener_core::{ScanSpec, scan_batch};
 let spec: ScanSpec = serde_json::from_str(spec_json)?;
 let report = scan_batch(&data, &spec)?;   // data: BTreeMap<symbol, Vec<Candle>>
 ```

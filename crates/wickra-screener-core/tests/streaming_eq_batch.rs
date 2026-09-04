@@ -7,7 +7,7 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use screener_core::{scan_batch, ScanSpec, Screener, SymbolInput};
+use wickra_screener_core::{scan_batch, ScanSpec, Screener, SymbolInput};
 
 const SPECS: [&str; 5] = [
     "momentum",

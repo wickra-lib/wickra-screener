@@ -7,11 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-09-04
+
+The first release this repository can publish completely. `0.1.0` reached PyPI,
+npm and the Go mirror; crates.io, Maven Central and NuGet each rejected it for
+their own reason, and because nothing stood between building and publishing, the
+three that worked went ahead anyway. There is no GitHub Release for `0.1.0`.
+
+### Changed
+
+- **`screener-core` is now `wickra-screener-core`, and `screener-bench` is
+  `wickra-screener-bench`.** Every other crate in the ecosystem carries the
+  family prefix; these two were the only ones that did not, and one of them was
+  published. crates.io refused it with `403 … this token does not have the
+  required permissions`, which was not about the permission but about the name:
+  the publishing token is scoped to `wickra` and `wickra-*`, so a crate called
+  `screener-core` fell outside it. That is also why `wickra-backtest` and
+  `wickra-terminal` never needed anything done to publish. Renaming is the fix
+  rather than widening the token, which would have let this repository claim a
+  very generic name on crates.io. Neither crate had been published, so nothing
+  downstream moves.
+
+### Fixed
+
+- **The Java binding had no release profile at all.** `release.yml` runs
+  `mvn -Prelease deploy`, Maven only warns about a `-P` that matches nothing, and
+  the deploy then ran bare: no sources jar, no javadoc jar, no GPG signatures and
+  no publishing plugin, which Central rejects with `repository element was not
+  specified in the POM inside distributionManagement`. The profile is now the one
+  `wickra-terminal` and `wickra-exchange` both use.
+- **Nothing gated the irreversible publishes.** The `guard` job checks the ref
+  before anything is built, which is a different question from whether the build
+  succeeded — every publish job depended only on its own artefacts, so three
+  registries published while three failed. A new `gate` job waits for every
+  build and requires the tagged commit to have passed CI with no other workflow
+  red on it. All seven publish jobs sit behind it.
+- **The WASM package was built inside its own publish job**, which put its build
+  behind the gate rather than in front of it. Split into `wasm-build` and
+  `wasm-publish`, so the tarball that reaches npm is the one the gate waited for.
+  The publish step also gained the `./` prefix on the tarball path: npm reads a
+  bare `dir/file.tgz` as an `owner/repo` shorthand and tries to clone it.
+
+
 ## [0.1.0] - 2026-09-04
 
 ### Added
 
-- `screener-core`: the data-driven scan engine — a serde `ScanSpec` (expressions,
+- `wickra-screener-core`: the data-driven scan engine — a serde `ScanSpec` (expressions,
   the `cmp` / `cross_section` / `breadth` / `all` / `any` / `not` condition tree,
   rank + limit) folded over each symbol's history against the Wickra library of
   497 O(1) streaming indicators. Batch (`scan_batch`) and streaming
@@ -88,7 +130,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `ScanReport.timeframe` echoes the spec's timeframe label so a report says
   which bars it describes. Both are omitted from the JSON when empty. The CLI's
   text output names the missing symbols after the match count.
-- `screener_core::feed_kind` reports which feed an indicator consumes, and
+- `wickra_screener_core::feed_kind` reports which feed an indicator consumes, and
   `ScanSpec::required_feeds` reports what a spec needs before a dataset is
   assembled.
 - A `feed_payload` fuzz target over the streaming command envelope, covering the
@@ -319,7 +361,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Streaming-equals-batch tests in every binding: C, C++, C#, Go, Java, Node,
   Python, R and WASM. Each feeds the committed universe candle by candle through
   the JSON command boundary, evaluates, and asserts the result is byte-identical
-  to a single `scan` over the same data. `screener-core` proved this in Rust, but
+  to a single `scan` over the same data. `wickra-screener-core` proved this in Rust, but
   that says nothing about the boundary each language actually crosses — and it
   is what found the double-execution above. Each also checks that `reset` returns
   a screener to its pre-feed state.
@@ -339,7 +381,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The CLI reads its `<SYMBOL>.csv` universe through `wickra-data`, the
   ecosystem's own OHLCV reader, and the dependency moved to the crate that
-  actually loads candles. `screener-core` declared it as "Candle + CSV loading
+  actually loads candles. `wickra-screener-core` declared it as "Candle + CSV loading
   for the universe data" and no Rust file referenced it; the CLI hand-rolled its
   own parser in a different crate.
 
@@ -426,7 +468,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- `ARCHITECTURE.md` no longer says `screener-core` depends on `wickra-data`; the
+- `ARCHITECTURE.md` no longer says `wickra-screener-core` depends on `wickra-data`; the
   CLI does, since the CSV loader moved there.
 - `check_readme_links.py` skips `bindings/wasm/pkg-node/`, the wasm-pack output
   the WASM tests load, which carries a generated README.
@@ -451,5 +493,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   either. Both yanked crates are now off their withdrawn releases (0.10.2 and
   0.14.1, same APIs), and all four checks pass against the wider graph.
 
-[Unreleased]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/wickra-lib/wickra-screener/releases/tag/v0.1.0

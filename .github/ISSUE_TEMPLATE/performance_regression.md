@@ -20,7 +20,7 @@ labels: performance
 | Wall time | | |
 
 **How you measured**
-`cargo bench -p screener-bench`, a criterion comparison, or your own harness —
+`cargo bench -p wickra-screener-bench`, a criterion comparison, or your own harness —
 say which, and whether the machine was otherwise idle.
 
 **The spec**

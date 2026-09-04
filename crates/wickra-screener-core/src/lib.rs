@@ -60,7 +60,7 @@ pub use wickra_backtest_core::{
 /// name. Lets a caller check a spec's needs before assembling a dataset.
 pub use indicator_set::feed_kind;
 
-/// The screener-core version string.
+/// The wickra-screener-core version string.
 #[must_use]
 pub fn version() -> &'static str {
     env!("CARGO_PKG_VERSION")

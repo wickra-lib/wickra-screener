@@ -10,7 +10,7 @@
 //! an in-band error; nothing here may panic.
 
 use libfuzzer_sys::fuzz_target;
-use screener_core::Screener;
+use wickra_screener_core::Screener;
 
 /// A spec naming one indicator per feed family, so a fed bar is checked against
 /// something that actually consumes it.

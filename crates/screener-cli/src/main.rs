@@ -1,7 +1,7 @@
 //! The `wickra-screener` reference CLI.
 //!
 //! Loads a `ScanSpec` and a universe of candles (a directory of `<SYMBOL>.csv`
-//! files or a JSON dataset on stdin), runs a scan through `screener-core`, and
+//! files or a JSON dataset on stdin), runs a scan through `wickra-screener-core`, and
 //! prints the report as text or JSON.
 
 mod args;

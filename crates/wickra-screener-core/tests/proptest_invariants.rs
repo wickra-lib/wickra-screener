@@ -7,7 +7,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use proptest::prelude::*;
-use screener_core::{
+use wickra_screener_core::{
     scan_batch, Candle, Comparator, Condition, CsMetric, Expr, PriceField, RankSpec, ScanSpec,
     Screener, SymbolInput,
 };

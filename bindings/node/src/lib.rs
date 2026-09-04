@@ -12,7 +12,7 @@
 use napi::Result;
 use napi_derive::napi;
 
-use screener_core::Screener as CoreScreener;
+use wickra_screener_core::Screener as CoreScreener;
 
 /// Build a napi error from a message.
 fn err(message: impl Into<String>) -> napi::Error {

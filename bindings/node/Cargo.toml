@@ -35,7 +35,7 @@ cast_sign_loss = "allow"
 similar_names = "allow"
 
 [dependencies]
-screener-core = { workspace = true }
+wickra-screener-core = { workspace = true }
 napi = { version = "3.9", features = ["napi8"] }
 napi-derive = "3.5"
 

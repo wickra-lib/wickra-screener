@@ -1,5 +1,5 @@
 [package]
-name = "screener-core"
+name = "wickra-screener-core"
 description = "Data-driven core of the Wickra screener: a serde ScanSpec condition tree folded over a symbol universe with 497 O(1) streaming indicators."
 version.workspace = true
 edition.workspace = true

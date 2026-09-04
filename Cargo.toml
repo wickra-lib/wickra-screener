@@ -1,6 +1,6 @@
 # Wickra Screener — workspace.
 # A parallel multi-symbol screener built as one data-driven core
-# (`screener-core`): a serde condition tree (ScanSpec) is folded over each
+# (`wickra-screener-core`): a serde condition tree (ScanSpec) is folded over each
 # symbol's history with 497 O(1) streaming indicators, evaluated per bar, and
 # scanned in parallel (rayon) or sequentially (the WASM fallback), byte-for-byte
 # identical. The core is exposed as a JSON-over-C-ABI data API in ten languages,
@@ -8,18 +8,18 @@
 # hub for C/C++/C#/Go/Java/R.
 #
 # The `members` list grows as crates are added, phase by phase; the final set is:
-#   crates/screener-core, crates/screener-cli, crates/screener-bench,
+#   crates/wickra-screener-core, crates/screener-cli, crates/wickra-screener-bench,
 #   bindings/c, bindings/python, bindings/node, bindings/wasm
 
 [workspace]
 resolver = "2"
-members = ["crates/screener-core", "crates/screener-cli", "crates/screener-bench", "bindings/c", "bindings/python", "bindings/node", "bindings/wasm", "examples/rust"]
+members = ["crates/wickra-screener-core", "crates/screener-cli", "crates/wickra-screener-bench", "bindings/c", "bindings/python", "bindings/node", "bindings/wasm", "examples/rust"]
 # The fuzz crate is its own (detached) workspace — cargo-fuzz builds it on a
 # nightly toolchain with sanitizer flags.
 exclude = ["fuzz"]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 rust-version = "1.86"
 license = "MIT OR Apache-2.0"
@@ -50,7 +50,7 @@ wickra-exchange = "0.1.1"
 # crates.io, so the screener no longer carries a git dependency for it.
 wickra-backtest-core = "0.1.2"
 # Workspace-internal crate, referenced by the CLI, bench and bindings.
-screener-core = { version = "0.1.0", path = "crates/screener-core" }
+wickra-screener-core = { version = "0.1.1", path = "crates/wickra-screener-core" }
 # Serialization — the data-driven boundary (spec/command/report as JSON).
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

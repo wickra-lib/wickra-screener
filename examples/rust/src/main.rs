@@ -7,7 +7,7 @@
 
 use std::collections::BTreeMap;
 
-use screener_core::{scan_batch, Candle, ScanSpec, SymbolInput};
+use wickra_screener_core::{scan_batch, Candle, ScanSpec, SymbolInput};
 
 const SPEC: &str = r#"{
     "universe": ["AAA", "BBB"],
@@ -39,7 +39,7 @@ fn main() {
 
     let report = scan_batch(data, &spec).expect("scan");
 
-    println!("wickra-screener {}", screener_core::version());
+    println!("wickra-screener {}", wickra_screener_core::version());
     println!(
         "{}",
         serde_json::to_string(&report).expect("serialize report")

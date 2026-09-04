@@ -9,7 +9,7 @@
 
 use std::collections::BTreeMap;
 
-use screener_core::{
+use wickra_screener_core::{
     scan_batch, Candle, Comparator, Condition, Expr, PriceField, ScanSpec, SymbolInput,
 };
 
@@ -323,7 +323,7 @@ fn a_scan_with_no_data_reports_no_staleness() {
 /// score come first, and the ones without keep a stable order among themselves.
 #[test]
 fn matches_without_a_score_sort_after_the_ones_with_one() {
-    use screener_core::RankSpec;
+    use wickra_screener_core::RankSpec;
 
     // Rank by the close five bars back. Only the long series reaches that far.
     let five_back = Expr::Prev {

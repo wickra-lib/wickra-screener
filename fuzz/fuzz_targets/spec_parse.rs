@@ -4,7 +4,7 @@
 //! clean `Err`.
 
 use libfuzzer_sys::fuzz_target;
-use screener_core::{Config, ScanSpec};
+use wickra_screener_core::{Config, ScanSpec};
 
 fuzz_target!(|data: &[u8]| {
     let Ok(text) = std::str::from_utf8(data) else {

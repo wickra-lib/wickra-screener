@@ -7,7 +7,7 @@
 use std::collections::BTreeMap;
 
 use libfuzzer_sys::fuzz_target;
-use screener_core::{scan_batch, Candle, ScanSpec, SymbolInput};
+use wickra_screener_core::{scan_batch, Candle, ScanSpec, SymbolInput};
 
 fuzz_target!(|data: &[u8]| {
     let Ok(text) = std::str::from_utf8(data) else {

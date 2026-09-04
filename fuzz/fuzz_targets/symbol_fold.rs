@@ -3,7 +3,7 @@
 //! screener and evaluated. No sequence — however adversarial — may panic.
 
 use libfuzzer_sys::fuzz_target;
-use screener_core::{Candle, Screener};
+use wickra_screener_core::{Candle, Screener};
 
 const SPEC: &str = r#"{"universe":["s0"],"condition":{"type":"cmp",
 "left":{"kind":"indicator","name":"Rsi","params":[14]},"op":"gt",

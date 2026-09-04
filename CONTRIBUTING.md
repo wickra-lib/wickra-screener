@@ -16,7 +16,7 @@ licensed as above, without any additional terms or conditions.
 
 - The core — the `ScanSpec` condition tree, the per-symbol `SymbolState` fold,
   the `Universe`, condition evaluation and `scan_batch` — lives in
-  `crates/screener-core`. Conditions are **data, not code**: a serde tree, so the
+  `crates/wickra-screener-core`. Conditions are **data, not code**: a serde tree, so the
   same screen crosses the C ABI and WASM unchanged.
 - The reference consumer is `crates/screener-cli` (the `wickra-screener` binary).
 - Every language binding lives under `bindings/<lang>/` and exposes the same
@@ -29,9 +29,9 @@ licensed as above, without any additional terms or conditions.
 
 | Path | Contents |
 | --- | --- |
-| `crates/screener-core` | The scan engine — the `ScanSpec` tree, the per-symbol fold, evaluation, `scan_batch` and the streaming `Screener`. |
+| `crates/wickra-screener-core` | The scan engine — the `ScanSpec` tree, the per-symbol fold, evaluation, `scan_batch` and the streaming `Screener`. |
 | `crates/screener-cli` | The reference `wickra-screener` binary: a spec plus a universe of CSV files or a JSON dataset on stdin. |
-| `crates/screener-bench` | Criterion benchmarks (`publish = false`). |
+| `crates/wickra-screener-bench` | Criterion benchmarks (`publish = false`). |
 | `bindings/c` | C ABI — `cdylib` + `staticlib` + generated `include/wickra_screener.h`, plus the header-only C++ hull `wickra_screener.hpp`. The hub every C-capable language links against. |
 | `bindings/python` | PyO3 bindings (`wickra-screener` on PyPI). |
 | `bindings/node` | napi-rs bindings (`wickra-screener` on npm). |
@@ -172,7 +172,7 @@ updates still arrive and are judged one at a time.
   that cannot fail is not a test — check that a new one goes red against the
   unfixed code before you keep it.
 - **Golden parity.** A change that alters a report must be blessed
-  (`cargo test -p screener-core --test golden -- --ignored`), and the diff
+  (`cargo test -p wickra-screener-core --test golden -- --ignored`), and the diff
   reviewed before it is committed. Every binding compares against the same files.
 - **Streaming parity.** Feeding candle by candle and evaluating must equal a
   single `scan` over the same data, in every binding — not only in the core.
@@ -198,7 +198,7 @@ updates still arrive and are judged one at a time.
 
 Conditions are a serde enum, so extending the screen means adding a variant, not
 a closure. A new comparator, cross-section metric or breadth condition is added
-to `crates/screener-core/src/spec.rs` and handled in `src/eval.rs`, with a serde
+to `crates/wickra-screener-core/src/spec.rs` and handled in `src/eval.rs`, with a serde
 round-trip test and a golden fixture. Indicators themselves come from the
 [Wickra](https://github.com/wickra-lib/wickra) core registry by name and
 parameters — no indicator code lives here. See `docs/CONDITIONS.md` and

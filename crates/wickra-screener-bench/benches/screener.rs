@@ -7,7 +7,7 @@ use std::collections::BTreeMap;
 use std::hint::black_box;
 
 use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion, Throughput};
-use screener_core::{scan_batch, Candle, Condition, Expr, ScanSpec, SymbolInput};
+use wickra_screener_core::{scan_batch, Candle, Condition, Expr, ScanSpec, SymbolInput};
 
 const BARS: usize = 60;
 const INDICATORS: [&str; 4] = ["Sma", "Ema", "Rsi", "Roc"];
@@ -50,7 +50,7 @@ fn spec(universe: &BTreeMap<String, SymbolInput>, count: usize) -> ScanSpec {
                     params: vec![period],
                     field: None,
                 },
-                op: screener_core::Comparator::Gt,
+                op: wickra_screener_core::Comparator::Gt,
                 right: Expr::Const { value: -1.0e9 },
             }
         })

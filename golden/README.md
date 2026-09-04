@@ -99,7 +99,7 @@ over `data.json`, byte-for-byte. The Rust golden test writes any missing file an
 otherwise asserts byte equality:
 
 ```bash
-cargo test -p screener-core --test golden -- --ignored --nocapture
+cargo test -p wickra-screener-core --test golden -- --ignored --nocapture
 ```
 
 Run it once to bless (writes the missing `expected/*.json`), review the diff, and

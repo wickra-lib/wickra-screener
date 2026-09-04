@@ -1,6 +1,6 @@
 /* Streaming equals batch, through the C ABI's two-call idiom.
  *
- * screener-core proves this in Rust, but that says nothing about the boundary a
+ * wickra-screener-core proves this in Rust, but that says nothing about the boundary a
  * C caller crosses. Every reach behind this ABI asks for the response length
  * first and reads it second, and the golden corpus only ever sends
  * {"cmd":"scan"} -- a pure function of its payload. So the command ran twice on

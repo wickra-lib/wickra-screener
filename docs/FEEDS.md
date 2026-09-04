@@ -12,7 +12,7 @@ breadth; [STREAMING.md](STREAMING.md) covers batch against streaming.
 
 ## The seven feed families
 
-`screener_core::feed_kind(name)` reports which family an indicator belongs to,
+`wickra_screener_core::feed_kind(name)` reports which family an indicator belongs to,
 and `ScanSpec::required_feeds()` reports what a whole spec needs before you
 assemble a dataset.
 
@@ -137,7 +137,7 @@ independently.
 ## Checking a spec before assembling data
 
 ```rust
-use screener_core::{feed_kind, ScanSpec};
+use wickra_screener_core::{feed_kind, ScanSpec};
 
 let spec: ScanSpec = serde_json::from_str(spec_json)?;
 spec.validate()?;                    // refuses a spec whose feeds cannot be met

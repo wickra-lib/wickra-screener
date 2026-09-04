@@ -38,4 +38,4 @@ cast_possible_wrap = "allow"
 similar_names = "allow"
 
 [dependencies]
-screener-core = { workspace = true }
+wickra-screener-core = { workspace = true }
