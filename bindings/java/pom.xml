@@ -6,7 +6,7 @@
 
   <groupId>org.wickra</groupId>
   <artifactId>wickra-screener</artifactId>
-  <version>0.1.1</version>
+  <version>0.1.2</version>
   <packaging>jar</packaging>
 
   <name>wickra-screener</name>
@@ -18,6 +18,29 @@
       <name>MIT OR Apache-2.0</name>
     </license>
   </licenses>
+
+  <!--
+    Maven Central requires both of these and rejects the deployment without
+    them. v0.1.1 got as far as a signed, validated bundle and then came back
+    with `SCM URL is not defined` and `Developers information is missing`,
+    which is a POM problem rather than a publishing one: nothing was uploaded
+    to the repository, and `github-release` depends on this job, so the whole
+    GitHub Release went with it. Every sibling repository already carried both
+    blocks.
+  -->
+  <scm>
+    <connection>scm:git:https://github.com/wickra-lib/wickra-screener.git</connection>
+    <developerConnection>scm:git:https://github.com/wickra-lib/wickra-screener.git</developerConnection>
+    <url>https://github.com/wickra-lib/wickra-screener</url>
+  </scm>
+
+  <developers>
+    <developer>
+      <id>kingchenc</id>
+      <name>kingchenc</name>
+      <url>https://github.com/kingchenc</url>
+    </developer>
+  </developers>
 
   <properties>
     <maven.compiler.release>22</maven.compiler.release>
@@ -147,6 +170,13 @@
                    where CENTRAL_USERNAME / CENTRAL_PASSWORD are bound. -->
               <publishingServerId>central</publishingServerId>
               <autoPublish>true</autoPublish>
+              <!-- Wait for the deployment to be *published*, not merely
+                   validated. The default stops at validation and prints "to
+                   finish publishing visit ...", so the job goes green while the
+                   artifact is not yet on the repository, and anything that fails
+                   after validation is invisible to this workflow. A green Maven
+                   job should mean the jar is public. -->
+              <waitUntil>published</waitUntil>
             </configuration>
           </plugin>
         </plugins>
