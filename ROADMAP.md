@@ -38,32 +38,24 @@ CI-green pull requests. Status below is updated as phases complete.
 
 ## Publication
 
-The crate is not on crates.io yet, and cannot be until `wickra-exchange`
-publishes its first release: the optional `live` feature depends on it from git,
-and cargo refuses a git dependency in a published package whether or not the
-feature is on. `wickra-terminal` is in the same position for the same reason.
-Today that reads:
+0.1.0 is published. Getting there took one thing that was not in this
+repository, and it is worth leaving written down because the same shape will
+recur.
 
-```
-$ cargo publish --dry-run -p screener-core
-error: failed to prepare local package for uploading
-  no matching package named `wickra-exchange` found
-  location searched: crates.io index
-```
+The optional `live` feature depends on `wickra-exchange`, and cargo refuses a
+git dependency in a published package whether or not the feature is on. So the
+crate could not reach crates.io until that sibling had its own first release —
+and neither could anything else, because `github-release` lists `cargo-publish`
+among its `needs`, deliberately, so that a release page can never read as
+complete while one registry is empty. A tag pushed before that point would have
+produced a failed `cargo-publish`, a skipped `github-release`, and no release
+assets at all — including the `wickra-screener-c-<triple>.tar.gz` archives an R
+`configure` downloads and r-universe needs before it can build the R package.
 
-The other artefacts — the Python, Node, WASM, NuGet, Maven, Go and C ABI ones —
-carry no such constraint *in themselves*, but they do not escape it either:
-`github-release` lists `cargo-publish` among its `needs`, deliberately, so that a
-release page can never read as complete while one registry is empty. The
-consequence is that a `v*` tag pushed today produces a failed `cargo-publish`, a
-skipped `github-release`, and therefore no release assets at all — including the
-`wickra-screener-c-<triple>.tar.gz` archives that an R `configure` would download
-and that r-universe needs before it can build the R package.
-
-So one unpublished sibling crate gates the whole first release, not just the
-crates.io half of it. Publishing `wickra-exchange` is the fix that matches the
-cause; decoupling `github-release` from `cargo-publish` would work too, at the
-price of partially reversing the rule that job was given.
+One unpublished sibling crate therefore gated the whole first release rather
+than the crates.io half of it. That was the right trade: the alternative,
+decoupling `github-release` from `cargo-publish`, buys a release page by
+partially reversing the rule that job exists for.
 
 ## Non-goals
 
