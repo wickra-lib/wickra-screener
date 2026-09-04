@@ -1,6 +1,6 @@
 {
   "name": "wickra-screener-win32-arm64-msvc",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Native binding for wickra-screener (Windows arm64 MSVC). Installed automatically as an optional dependency of wickra-screener on matching platforms.",
   "main": "wickra-screener.win32-arm64-msvc.node",
   "files": [

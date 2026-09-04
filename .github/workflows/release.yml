@@ -794,12 +794,13 @@ jobs:
         run: |
           dotnet nuget push "nupkg/*.nupkg" --api-key "$NUGET_API_KEY" \
             --source https://api.nuget.org/v3/index.json --skip-duplicate
-      - name: Upload the NuGet package as a build artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: nuget-package
-          path: nupkg/*.nupkg
-          if-no-files-found: error
+      # The package is uploaded as an artifact *before* the push, above. A
+      # second upload under the same name used to sit here and it can only ever
+      # fail: `409 Conflict: an artifact with this name already exists on the
+      # workflow run`. At v0.1.0 the job died earlier, on the missing NuGet
+      # trust policy, so this step had never run. At v0.1.1 the policy worked,
+      # the push succeeded, and then this line failed the job anyway -- taking
+      # `github-release` with it, because that job needs this one.
 
   # Publish the Java binding to Maven Central. The org.wickra namespace is
   # verified; auth uses the Sonatype Central token (CENTRAL_USERNAME /
