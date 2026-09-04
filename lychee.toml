@@ -15,12 +15,13 @@ max_concurrency = 8
 # example/placeholder hosts, and the package-registry URLs that 404 until a
 # release is published.
 #
-# The changelog's version-compare links are the same class, and unlike the
-# registry URLs they do not stop 404ing after the first release: they point at
-# the tag being prepared, which is created *after* the release PR is merged.
-# The link check runs on push and pull_request and never on the tag, so every
-# future release PR would carry the same two red links. One pattern covers all
-# of them.
+# The changelog's version links are the same class, and unlike the registry URLs
+# the compare one does not stop 404ing after the first release: both point at
+# the tag being prepared, which is created *after* the release PR is merged. The
+# link check runs on push and pull_request and never on the tag, so every future
+# release PR would carry the same red links. Two patterns cover all of them --
+# `releases/tag/` for the first release, which has no earlier tag to compare
+# against, and `compare/` for every release after it.
 exclude = [
     "^https?://localhost",
     "^https?://127\\.0\\.0\\.1",
@@ -32,6 +33,7 @@ exclude = [
     "^https?://www\\.nuget\\.org/packages/Wickra\\.Screener",
     "^https?://central\\.sonatype\\.com/artifact/org\\.wickra/wickra-screener",
     "github\\.com/wickra-lib/wickra-screener/compare/",
+    "github\\.com/wickra-lib/wickra-screener/releases/tag/",
 ]
 
 # Directories that hold markdown which is not ours to check: dependency trees,
