@@ -32,7 +32,7 @@
 
 > **Part of the [Wickra ecosystem](https://github.com/wickra-lib):** the same data-driven core and ten-language binding surface also power [wickra-exchange](https://github.com/wickra-lib/wickra-exchange), [wickra-backtest](https://github.com/wickra-lib/wickra-backtest), [wickra-terminal](https://github.com/wickra-lib/wickra-terminal) and 20 more — see [the full list](https://github.com/wickra-lib).
 
-Wickra Screener is one data-driven core, [`screener-core`](crates/screener-core):
+Wickra Screener is one data-driven core, [`wickra-screener-core`](crates/wickra-screener-core):
 a serde **condition tree** (`ScanSpec`) is folded over each symbol's history with
 the [Wickra](https://github.com/wickra-lib/wickra) indicator library — 497 of them
 resolvable by name — evaluated at the latest bar, and scanned across the whole
@@ -49,7 +49,7 @@ R**, so a developer in any language runs the same screen.
 - **Cross-section & breadth** — rank, percentile, z-score and market-breadth conditions that see every symbol of a bar at once.
 
 ```rust
-use screener_core::{scan_batch, ScanSpec, Screener};
+use wickra_screener_core::{scan_batch, ScanSpec, Screener};
 
 // Batch: fold every symbol's full history, evaluate at the last bar.
 let spec: ScanSpec = serde_json::from_str(spec_json)?;
@@ -63,7 +63,7 @@ let report = screener.evaluate();
 
 ## Status
 
-**0.1.0 — the first release.** The core, the CLI, all ten language bindings, the
+**0.1.1 — the first complete release.** The core, the CLI, all ten language bindings, the
 byte-exact golden corpus, property + fuzz tests, benchmarks and one runnable
 example per language are in place and green across the full CI matrix
 (10 languages × 3 OS). [ROADMAP.md](ROADMAP.md) has what is done, what is open
@@ -161,9 +161,9 @@ Node.js and WASM are native. See each `bindings/<lang>/README.md` and the runnab
 ## Project layout
 
 ```
-crates/screener-core    the data-driven core (ScanSpec, Expr, Condition, scan_batch, streaming)
+crates/wickra-screener-core    the data-driven core (ScanSpec, Expr, Condition, scan_batch, streaming)
 crates/screener-cli     the CLI (bin: wickra-screener)
-crates/screener-bench   criterion benchmarks
+crates/wickra-screener-bench   criterion benchmarks
 bindings/{python,node,wasm,c,go,csharp,java,r}   the ten-language surface
 golden/                 CSV + JSON universes, specs, and byte-exact expected reports
 fuzz/                   cargo-fuzz targets (spec_parse, condition_eval, scan_batch, symbol_fold)
@@ -245,7 +245,7 @@ cargo +nightly fuzz run spec_parse -- -max_total_time=30
 Every binding runs the same committed corpus under [`golden/`](golden/) and has
 to reproduce each expected report **byte for byte** — that is what makes the
 cross-language claim checkable rather than asserted. Regenerating those files is
-`cargo test -p screener-core --test golden -- --ignored`, and the diff is meant
+`cargo test -p wickra-screener-core --test golden -- --ignored`, and the diff is meant
 to be read before it is committed.
 
 ## Requirements
@@ -256,7 +256,7 @@ to be read before it is committed.
 
 ## Benchmarks
 
-`crates/screener-bench` measures `scan_batch` scaling by universe size and
+`crates/wickra-screener-bench` measures `scan_batch` scaling by universe size and
 indicator count, parallel vs sequential. See [BENCHMARKS.md](BENCHMARKS.md).
 
 ## Ecosystem

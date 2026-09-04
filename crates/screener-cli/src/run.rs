@@ -1,13 +1,13 @@
 //! Load the spec and universe, run the scan, and render the report.
 
 use crate::args::{Args, Format};
-use screener_core::{scan_batch, Candle, Config, ScanReport, ScanSpec, SymbolInput};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
 use std::fs;
 use std::io::Read;
 use std::path::Path;
 use wickra_data::csv::CandleReader;
+use wickra_screener_core::{scan_batch, Candle, Config, ScanReport, ScanSpec, SymbolInput};
 
 /// Load the inputs, run the scan and return the rendered output.
 pub fn run(args: &Args) -> Result<String, String> {
@@ -44,7 +44,7 @@ fn load_universe(args: &Args, spec: &ScanSpec) -> Result<BTreeMap<String, Symbol
 /// Pull the spec's universe from an exchange.
 #[cfg(feature = "live")]
 fn load_live(args: &Args, spec: &ScanSpec) -> Result<BTreeMap<String, SymbolInput>, String> {
-    use screener_core::{ExchangeOptions, LiveUniverse};
+    use wickra_screener_core::{ExchangeOptions, LiveUniverse};
 
     let Some(venue) = &args.live else {
         return Err("no data source (pass --data, --stdin or --live)".to_string());

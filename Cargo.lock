@@ -2050,30 +2050,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "screener-bench"
-version = "0.1.0"
-dependencies = [
- "codspeed-criterion-compat",
- "screener-core",
-]
-
-[[package]]
-name = "screener-core"
-version = "0.1.0"
-dependencies = [
- "proptest",
- "rayon",
- "rust_decimal",
- "serde",
- "serde_json",
- "thiserror",
- "toml",
- "wickra-backtest-core",
- "wickra-core",
- "wickra-exchange",
-]
-
-[[package]]
 name = "seahash"
 version = "4.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2909,53 +2885,77 @@ dependencies = [
 
 [[package]]
 name = "wickra-screener"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "clap",
- "screener-core",
  "serde_json",
  "wickra-data",
+ "wickra-screener-core",
+]
+
+[[package]]
+name = "wickra-screener-bench"
+version = "0.1.1"
+dependencies = [
+ "codspeed-criterion-compat",
+ "wickra-screener-core",
 ]
 
 [[package]]
 name = "wickra-screener-c"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
- "screener-core",
+ "wickra-screener-core",
+]
+
+[[package]]
+name = "wickra-screener-core"
+version = "0.1.1"
+dependencies = [
+ "proptest",
+ "rayon",
+ "rust_decimal",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "toml",
+ "wickra-backtest-core",
+ "wickra-core",
+ "wickra-exchange",
 ]
 
 [[package]]
 name = "wickra-screener-example"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
- "screener-core",
  "serde_json",
+ "wickra-screener-core",
 ]
 
 [[package]]
 name = "wickra-screener-node"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "napi",
  "napi-build",
  "napi-derive",
- "screener-core",
+ "wickra-screener-core",
 ]
 
 [[package]]
 name = "wickra-screener-python"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "pyo3",
- "screener-core",
+ "wickra-screener-core",
 ]
 
 [[package]]
 name = "wickra-screener-wasm"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
- "screener-core",
  "wasm-bindgen",
+ "wickra-screener-core",
 ]
 
 [[package]]

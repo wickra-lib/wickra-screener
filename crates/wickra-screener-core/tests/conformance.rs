@@ -4,7 +4,7 @@
 
 use std::collections::BTreeMap;
 
-use screener_core::{
+use wickra_screener_core::{
     scan_batch, Candle, Comparator, Condition, CsMetric, Expr, PriceField, RankSpec, ScanSpec,
     SymbolInput,
 };

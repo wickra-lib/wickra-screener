@@ -12,7 +12,7 @@ and in WASM, byte-for-byte identical.
 ```
 CONSUMERS   CLI: crates/screener-cli        ·   any language via its binding (command JSON)
       ▲ ScanReport JSON                                      ▲
-CORE  crates/screener-core:  ScanSpec (JSON) → Universe<Symbol, SymbolState> (O(1)/bar)
+CORE  crates/wickra-screener-core:  ScanSpec (JSON) → Universe<Symbol, SymbolState> (O(1)/bar)
                              → condition eval → scan_batch (rayon) / streaming
       ▼ data-driven JSON API in ten languages (like backtest run_json / terminal command_json)
 BINDINGS  python · node · wasm · c (C-ABI hub) → c / c++ / c# / go / java / r
@@ -80,9 +80,9 @@ holds no order-secret material.
 
 | Path | What is in it | Published as |
 | --- | --- | --- |
-| `crates/screener-core` | The scan engine: `ScanSpec`, `Expr`, `Condition`, `SymbolState`, `Universe`, `IndicatorSet`, `scan_batch`, `Screener`. | `screener-core` (crates.io) |
+| `crates/wickra-screener-core` | The scan engine: `ScanSpec`, `Expr`, `Condition`, `SymbolState`, `Universe`, `IndicatorSet`, `scan_batch`, `Screener`. | `wickra-screener-core` (crates.io) |
 | `crates/screener-cli` | The reference binary: argument parsing, the CSV / stdin universe loader, text and JSON rendering. | `wickra-screener` (crates.io) |
-| `crates/screener-bench` | Criterion benchmarks over `scan_batch`. | not published |
+| `crates/wickra-screener-bench` | Criterion benchmarks over `scan_batch`. | not published |
 | `bindings/c` | The C ABI hub plus the generated header and the header-only C++ hull. | C ABI archives on the release page |
 | `bindings/python`, `node`, `wasm` | The three native bindings, each calling the core directly. | PyPI / npm / npm |
 | `bindings/csharp`, `go`, `java`, `r` | The four reaches over the C ABI hub. | NuGet / Go module mirror / Maven Central / r-universe |
@@ -155,7 +155,7 @@ Documented so a contributor does not re-discover them.
   `cargo clippy --workspace` never compile it, so a public signature change in
   the core compiles clean locally and fails only in CI. Run
   `cargo check --manifest-path fuzz/Cargo.toml` before pushing one.
-- **Coverage measures `screener-core` under `--no-default-features` only.** The
+- **Coverage measures `wickra-screener-core` under `--no-default-features` only.** The
   parallel path, the CLI and the bindings are exercised by their own suites but
   do not appear in the coverage figure, so that number is narrower than it looks.
 - **The first release is gated on `wickra-exchange` reaching crates.io.** The

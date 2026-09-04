@@ -1,6 +1,6 @@
 {
   "name": "wickra-screener-linux-arm64-gnu",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Native binding for wickra-screener (Linux arm64 GNU). Installed automatically as an optional dependency of wickra-screener on matching platforms.",
   "main": "wickra-screener.linux-arm64-gnu.node",
   "files": [

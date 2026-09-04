@@ -10,7 +10,7 @@
 
 use std::collections::BTreeMap;
 
-use screener_core::{
+use wickra_screener_core::{
     scan_batch, Candle, Comparator, Condition, CrossSection, DerivativesTick, Error, Expr,
     OrderBook, ScanSpec, SymbolInput, SymbolSeries, TradePrint,
 };
@@ -94,7 +94,7 @@ fn derivs() -> Vec<DerivativesTick> {
 }
 
 fn books() -> Vec<OrderBook> {
-    use screener_core::Level;
+    use wickra_screener_core::Level;
     (0..BARS)
         .map(|i| {
             let mid = close_at(i);
@@ -125,7 +125,7 @@ fn books() -> Vec<OrderBook> {
 }
 
 fn trades() -> Vec<Vec<TradePrint>> {
-    use screener_core::TradeSide;
+    use wickra_screener_core::TradeSide;
     (0..BARS)
         .map(|i| {
             let mid = close_at(i);
@@ -148,7 +148,7 @@ fn trades() -> Vec<Vec<TradePrint>> {
 }
 
 fn sections() -> Vec<CrossSection> {
-    use screener_core::CrossSectionMember;
+    use wickra_screener_core::CrossSectionMember;
     (0..BARS)
         .map(|i| {
             let up = i % 3 != 0;
@@ -303,7 +303,7 @@ fn breadth_indicators_read_a_cross_section() {
 /// at a time and cannot, so there the feed is still required.
 #[test]
 fn a_batch_scan_derives_the_cross_section_but_a_streaming_one_cannot() {
-    use screener_core::Screener;
+    use wickra_screener_core::Screener;
 
     let spec = spec_for("AdvanceDecline", vec![]);
     let report = scan_batch(candles_only(), &spec)
@@ -405,7 +405,7 @@ fn every_pairwise_name_behaves_like_one() {
 /// result agrees with the batch scan over the same bars.
 #[test]
 fn streaming_with_feeds_equals_the_batch_scan() {
-    use screener_core::{Screener, StepFeeds};
+    use wickra_screener_core::{Screener, StepFeeds};
 
     let spec = spec_for("Microprice", vec![]);
     let spec_json = serde_json::to_string(&spec).expect("serialize spec");
@@ -433,7 +433,7 @@ fn streaming_with_feeds_equals_the_batch_scan() {
 /// The same feeds travel through the JSON command boundary every binding uses.
 #[test]
 fn the_command_boundary_carries_the_feeds() {
-    use screener_core::Screener;
+    use wickra_screener_core::Screener;
 
     let spec = spec_for("Microprice", vec![]);
     let spec_json = serde_json::to_string(&spec).expect("serialize spec");
@@ -462,7 +462,7 @@ fn the_command_boundary_carries_the_feeds() {
 /// way the batch scan refuses the dataset.
 #[test]
 fn a_streaming_bar_without_the_feed_is_refused() {
-    use screener_core::Screener;
+    use wickra_screener_core::Screener;
 
     let spec = spec_for("Microprice", vec![]);
     let spec_json = serde_json::to_string(&spec).expect("serialize spec");
@@ -470,7 +470,7 @@ fn a_streaming_bar_without_the_feed_is_refused() {
 
     let candle = candles()[0];
     let err = screener
-        .feed_step(SYMBOL, &candle, screener_core::StepFeeds::default())
+        .feed_step(SYMBOL, &candle, wickra_screener_core::StepFeeds::default())
         .expect_err("a bar without the book must be refused");
     assert!(
         matches!(&err, Error::MissingFeed { feed, .. } if feed == "books"),
@@ -491,7 +491,7 @@ fn a_streaming_bar_without_the_feed_is_refused() {
 /// A crossed book fails its invariants; the scan says so instead of dropping it.
 #[test]
 fn a_malformed_order_book_is_reported() {
-    use screener_core::Level;
+    use wickra_screener_core::Level;
 
     let spec = spec_for("Microprice", vec![]);
     let mut crossed = books();
@@ -515,7 +515,7 @@ fn a_malformed_order_book_is_reported() {
 /// The same holds on the streaming path.
 #[test]
 fn a_malformed_streaming_feed_is_reported() {
-    use screener_core::{Level, Screener, StepFeeds};
+    use wickra_screener_core::{Level, Screener, StepFeeds};
 
     let spec = spec_for("Microprice", vec![]);
     let spec_json = serde_json::to_string(&spec).expect("serialize spec");
@@ -543,7 +543,7 @@ fn a_malformed_streaming_feed_is_reported() {
 /// `required_feeds` tells a caller what to assemble before it assembles it.
 #[test]
 fn required_feeds_lists_what_a_spec_needs() {
-    use screener_core::FeedKind;
+    use wickra_screener_core::FeedKind;
 
     assert!(spec_for("Rsi", vec![14.0]).required_feeds().is_empty());
     assert_eq!(

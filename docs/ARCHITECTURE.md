@@ -2,7 +2,7 @@
 
 The top-level [ARCHITECTURE.md](../ARCHITECTURE.md) gives the high-level shape;
 this page covers how the core actually evaluates a scan. The whole product is
-**one data-driven core** (`screener-core`) and N thin consumers — the CLI and the
+**one data-driven core** (`wickra-screener-core`) and N thin consumers — the CLI and the
 ten language bindings — each of which only ships a spec and reads back a report.
 
 ## The pipeline
@@ -57,7 +57,7 @@ reformatting to drift.
 
 The indicator registry, the `Candle` type and the O(1) indicator implementations
 come from the Wickra ecosystem (`wickra-backtest-core`'s registry over the
-`wickra` indicator library); `screener-core` adds only the spec model, the fold,
+`wickra` indicator library); `wickra-screener-core` adds only the spec model, the fold,
 and the cross-section / breadth / rank layers.
 
 ## See also

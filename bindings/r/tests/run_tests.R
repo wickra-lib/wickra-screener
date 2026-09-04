@@ -81,7 +81,7 @@ if (!is.null(g)) {
 }
 ## streaming equals batch, driven through the same command boundary.
 ##
-## screener-core proves this in Rust, but that says nothing about the boundary
+## wickra-screener-core proves this in Rust, but that says nothing about the boundary
 ## this binding crosses. The golden block above only ever sends {"cmd":"scan"},
 ## so feed and evaluate were exercised in no language at all -- which is how the
 ## C ABI shipped a command that ran twice under the two-call idiom this binding

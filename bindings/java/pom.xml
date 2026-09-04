@@ -6,7 +6,7 @@
 
   <groupId>org.wickra</groupId>
   <artifactId>wickra-screener</artifactId>
-  <version>0.1.0</version>
+  <version>0.1.1</version>
   <packaging>jar</packaging>
 
   <name>wickra-screener</name>
@@ -60,4 +60,97 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <!--
+      Release profile (CI only, gated). `release.yml` runs
+      `mvn -B -f bindings/java -Prelease deploy -DskipTests`, so everything
+      Maven Central requires beyond a plain jar lives here: a sources jar, a
+      javadoc jar, a GPG signature over every artifact, and the publishing
+      plugin that uploads them.
+
+      There was no profiles block at all until 0.1.1, and Maven only warns about
+      a `-P` that matches nothing. So the deploy ran bare and died on
+      `repository element was not specified in the POM inside
+      distributionManagement`, which is Maven saying it had nowhere to send the
+      artifacts. `github-release` depends on this job, so that rejection took
+      the whole GitHub Release with it, and v0.1.0 has none.
+
+      The native libraries are staged into src/main/resources/native/<os>-<arch>/
+      from the c-abi-* artifacts before the deploy runs, so the published jar
+      carries every platform's library.
+    -->
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <version>3.4.0</version>
+            <executions>
+              <execution>
+                <id>attach-sources</id>
+                <goals><goal>jar-no-fork</goal></goals>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <version>3.12.0</version>
+            <configuration>
+              <!-- Central requires a javadoc jar, not perfect javadoc; doclint
+                   would fail the release over a missing @param on a binding
+                   whose contract is the C ABI. -->
+              <doclint>none</doclint>
+              <quiet>true</quiet>
+            </configuration>
+            <executions>
+              <execution>
+                <id>attach-javadocs</id>
+                <goals><goal>jar</goal></goals>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>3.2.8</version>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals><goal>sign</goal></goals>
+                <configuration>
+                  <!-- Non-interactive signing on CI: modern GPG needs loopback
+                       pinentry to take the passphrase from the env without a
+                       TTY. The key and passphrase are wired in by setup-java. -->
+                  <gpgArguments>
+                    <arg>--pinentry-mode</arg>
+                    <arg>loopback</arg>
+                  </gpgArguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>org.sonatype.central</groupId>
+            <artifactId>central-publishing-maven-plugin</artifactId>
+            <version>0.11.0</version>
+            <extensions>true</extensions>
+            <configuration>
+              <!-- Matches `server-id: central` in the setup-java step, which is
+                   where CENTRAL_USERNAME / CENTRAL_PASSWORD are bound. -->
+              <publishingServerId>central</publishingServerId>
+              <autoPublish>true</autoPublish>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

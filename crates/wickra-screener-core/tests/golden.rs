@@ -13,14 +13,14 @@
 //! Bless (regenerate the expected files) with:
 //!
 //! ```text
-//! cargo test -p screener-core --test golden -- --ignored --nocapture
+//! cargo test -p wickra-screener-core --test golden -- --ignored --nocapture
 //! ```
 
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use screener_core::{scan_batch, ScanSpec, SymbolInput};
+use wickra_screener_core::{scan_batch, ScanSpec, SymbolInput};
 
 const SPECS: [&str; 12] = [
     "momentum",
@@ -48,7 +48,7 @@ fn dataset_for(name: &str) -> &'static str {
 }
 
 fn golden_dir() -> PathBuf {
-    // CARGO_MANIFEST_DIR is crates/screener-core; golden/ lives at the repo root.
+    // CARGO_MANIFEST_DIR is crates/wickra-screener-core; golden/ lives at the repo root.
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../golden")
 }
 

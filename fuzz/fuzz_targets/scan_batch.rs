@@ -7,7 +7,7 @@
 use std::collections::BTreeMap;
 
 use libfuzzer_sys::fuzz_target;
-use screener_core::{scan_batch, ScanSpec, SymbolInput};
+use wickra_screener_core::{scan_batch, ScanSpec, SymbolInput};
 use serde::Deserialize;
 
 #[derive(Deserialize)]

@@ -38,12 +38,12 @@ jobs:
       - name: Run the Criterion benchmark (parallel, the default)
         run: |
           echo "=== parallel (rayon, default features) ===" | tee benchmark.txt
-          cargo bench -p screener-bench | tee -a benchmark.txt
+          cargo bench -p wickra-screener-bench | tee -a benchmark.txt
       - name: Run the Criterion benchmark (sequential)
         run: |
           echo "" | tee -a benchmark.txt
           echo "=== sequential (--no-default-features, the WASM path) ===" | tee -a benchmark.txt
-          cargo bench -p screener-bench --no-default-features | tee -a benchmark.txt
+          cargo bench -p wickra-screener-bench --no-default-features | tee -a benchmark.txt
       - name: Upload report
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

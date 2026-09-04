@@ -8,7 +8,7 @@ CI-green pull requests. Status below is updated as phases complete.
 
 0. **Scaffold** — workspace, governance, supply-chain config, `.github`
    scaffolding. *Landed.*
-1. **`screener-core`** — the `ScanSpec` condition tree, the per-symbol
+1. **`wickra-screener-core`** — the `ScanSpec` condition tree, the per-symbol
    `SymbolState` fold, the `Universe`, condition evaluation and `scan_batch`,
    with near-total coverage via inline tests. *Landed.*
 2. **`screener-cli`** — the reference `wickra-screener` binary: load a spec and a

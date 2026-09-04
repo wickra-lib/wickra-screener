@@ -1,7 +1,7 @@
 # Wickra Screener — C ABI
 
 The C ABI is the hub every C-capable language (C, C++, C#, Go, Java, R) links
-against. It exposes `screener-core` as a tiny, JSON-shaped surface built as both
+against. It exposes `wickra-screener-core` as a tiny, JSON-shaped surface built as both
 a `cdylib` (dynamic library) and a `staticlib`.
 
 ## Surface

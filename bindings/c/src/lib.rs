@@ -28,7 +28,7 @@ use core::ffi::{c_char, CStr};
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::ptr;
 
-use screener_core::Screener;
+use wickra_screener_core::Screener;
 
 /// A required pointer argument (`handle` or `cmd_json`) was null.
 pub const WICKRA_SCREENER_ERR_NULL: i32 = -1;

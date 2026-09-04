@@ -12,7 +12,7 @@
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
-use screener_core::Screener;
+use wickra_screener_core::Screener;
 
 /// A screener instance driven by JSON commands.
 ///

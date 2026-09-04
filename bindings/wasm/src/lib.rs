@@ -10,7 +10,7 @@
 
 use wasm_bindgen::prelude::*;
 
-use screener_core::Screener as CoreScreener;
+use wickra_screener_core::Screener as CoreScreener;
 
 /// A screener instance driven by JSON commands.
 #[wasm_bindgen]

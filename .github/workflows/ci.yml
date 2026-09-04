@@ -317,7 +317,7 @@ jobs:
         run: |
           set -euo pipefail
           published=()
-          for crate in screener-core wickra-screener; do
+          for crate in wickra-screener-core wickra-screener; do
             code=$(curl -sS -o /dev/null -w "%{http_code}" \
               -H "User-Agent: wickra-screener-ci" \
               "https://crates.io/api/v1/crates/$crate")
@@ -377,11 +377,11 @@ jobs:
       - name: Generate coverage (sequential profile)
         run: >
           cargo llvm-cov --no-report --no-default-features
-          -p screener-core -p wickra-screener
+          -p wickra-screener-core -p wickra-screener
       - name: Generate coverage (parallel profile)
         run: >
           cargo llvm-cov --no-report
-          -p screener-core -p wickra-screener
+          -p wickra-screener-core -p wickra-screener
       - name: Merge into one lcov report
         run: cargo llvm-cov report --lcov --output-path lcov.info
       - name: Upload to Codecov
@@ -684,7 +684,7 @@ jobs:
   # container-only break.
   #
   # Unlike the sibling repositories this needs no vendored OpenSSL and no Perl:
-  # the Python binding depends on screener-core without the `live` feature, so
+  # the Python binding depends on wickra-screener-core without the `live` feature, so
   # nothing in the wheel links a TLS stack. If that ever changes, this job is
   # where it will show up first.
   python-wheel-container-smoke:

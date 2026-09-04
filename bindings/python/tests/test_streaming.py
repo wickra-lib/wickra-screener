@@ -1,7 +1,7 @@
 """Streaming equals batch, driven through the JSON command boundary.
 
-``screener-core`` proves this in Rust
-(``crates/screener-core/tests/streaming_eq_batch.rs``), but that says nothing
+``wickra-screener-core`` proves this in Rust
+(``crates/wickra-screener-core/tests/streaming_eq_batch.rs``), but that says nothing
 about the boundary each language actually crosses. A binding reaches the core
 through ``command``, and the golden corpus only ever sends ``{"cmd":"scan"}`` --
 so ``feed`` and ``evaluate`` were exercised in no language at all. A binding that
