@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **The banner alt text drifted in the Go binding's README.** Every other README
+  in the repository carries the same sentence, so the picture reads the same
+  wherever it is embedded; `bindings/go/README.md` described the Go binding
+  instead of the project, which makes the alt text a per-file caption rather
+  than the project's one-line description.
+
+- **The pinned `uv` bootstrap was three patches behind.**
+  `scripts/update-lockfiles.sh` fetched `uv` 0.12.9; the pin and all four
+  release checksums now name 0.12.12.
+
 ## [0.1.3] - 2026-09-04
 
 `0.1.2` published to all seven registries and r-universe still built **0 of 13**
