@@ -185,7 +185,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: taiki-e/install-action@742a3317eac7bd62f91cd888b4eead5e784ba833 # v2.87.1
+      - uses: taiki-e/install-action@e67fa11c4b9316fa714ddf0abed07a0c3143b95b # v2.87.4
         with:
           tool: cargo-deny
       - run: cargo deny check
@@ -203,7 +203,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: taiki-e/install-action@742a3317eac7bd62f91cd888b4eead5e784ba833 # v2.87.1
+      - uses: taiki-e/install-action@e67fa11c4b9316fa714ddf0abed07a0c3143b95b # v2.87.4
         with:
           tool: osv-scanner
       - run: osv-scanner scan source --recursive .
@@ -291,7 +291,7 @@ jobs:
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
 
       - name: Install cargo-semver-checks
-        uses: taiki-e/install-action@742a3317eac7bd62f91cd888b4eead5e784ba833 # v2.87.1
+        uses: taiki-e/install-action@e67fa11c4b9316fa714ddf0abed07a0c3143b95b # v2.87.4
         timeout-minutes: 10 # fail fast on a stuck download instead of hanging the job
         with:
           tool: cargo-semver-checks
@@ -362,7 +362,7 @@ jobs:
           echo "::error::cargo fetch still failing after 5 attempts"
           exit 1
       - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@742a3317eac7bd62f91cd888b4eead5e784ba833 # v2.87.1
+        uses: taiki-e/install-action@e67fa11c4b9316fa714ddf0abed07a0c3143b95b # v2.87.4
         with:
           tool: cargo-llvm-cov
       # Both feature sets, merged into one report, and the CLI alongside the
@@ -427,7 +427,7 @@ jobs:
           echo "::error::cargo fetch still failing after 5 attempts"
           exit 1
       - name: Install cargo-fuzz
-        uses: taiki-e/install-action@742a3317eac7bd62f91cd888b4eead5e784ba833 # v2.87.1
+        uses: taiki-e/install-action@e67fa11c4b9316fa714ddf0abed07a0c3143b95b # v2.87.4
         with:
           tool: cargo-fuzz
       - name: Fuzz spec_parse (30 s)
@@ -837,7 +837,7 @@ jobs:
           echo "::error::cargo fetch still failing after 5 attempts"
           exit 1
       - name: Install wasm-pack
-        uses: taiki-e/install-action@742a3317eac7bd62f91cd888b4eead5e784ba833 # v2.87.1
+        uses: taiki-e/install-action@e67fa11c4b9316fa714ddf0abed07a0c3143b95b # v2.87.4
         with:
           tool: wasm-pack
       - name: Build the wasm binding
@@ -877,6 +877,27 @@ jobs:
         run: node --test tests/*.test.js
         working-directory: bindings/wasm
 
+  cli:
+    name: CLI smoke (spec + universe, both formats)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      RUSTFLAGS: "-C debuginfo=0"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-rust
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - run: cargo build -p wickra-screener
+      # A golden spec over the committed universe, in both output formats.
+      # The text output reports the scanned count; the JSON output carries the
+      # `matches` array. Six symbols in, four over the threshold.
+      - name: Run end-to-end
+        run: |
+          ./target/debug/wickra-screener --spec golden/specs/breadth.json --data golden/data --format text | grep -q '4 match(es), 6 scanned'
+          ./target/debug/wickra-screener --spec golden/specs/breadth.json --data golden/data --format json | grep -q '"matches"'
+
   c-abi:
     name: C ABI on ${{ matrix.os }}
     strategy:
@@ -908,7 +929,7 @@ jobs:
           echo "::error::cargo fetch still failing after 5 attempts"
           exit 1
       - name: Install cbindgen
-        uses: taiki-e/install-action@742a3317eac7bd62f91cd888b4eead5e784ba833 # v2.87.1
+        uses: taiki-e/install-action@e67fa11c4b9316fa714ddf0abed07a0c3143b95b # v2.87.4
         with:
           tool: cbindgen
       - name: Build the C ABI library (cdylib + staticlib)
