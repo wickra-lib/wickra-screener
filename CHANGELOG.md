@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`actionlint` failed on five shell constructs the screener had already
+  fixed.** `a && b || c` is not if-then-else -- when the publish succeeded but
+  the echo failed, the fallback branch ran and reported "already published";
+  `local pkg=$(basename …)` and `export PATH="$(cygpath …)"` hide the command's
+  exit status behind `local`/`export`; and an asset count taken from `ls` breaks
+  on a filename containing a newline. The runner-label config the linter needs
+  for `windows-11-arm` was missing too.
+
+- **`cargo-deny` was set to warn about duplicated crates, so it noted that split
+  and moved on.** It is an error now. Only four duplicates exist across this
+  workspace and each is a crate part-way through a major release reached through
+  two ecosystems; they are skipped by name with the reason recorded, so a fifth
+  still fails. Verified by putting 6.1.3 back and watching the check fail on
+  `convert_case` before the compiler ever ran.
+
+- **`wickra-exchange` was declared a version behind its siblings** -- `0.1.1`
+  here against `0.1.3` in the four repositories that also depend on it. A caret
+  range admits the newer one, so nothing failed; the lockfile simply stayed on
+  the old one and no pull request ever proposed otherwise.
+
 - **The R `configure` scripts still defined `wkscreen_download`**, the last
   trace of the screener's prefix — the CI-visible half of which already had to
   be fixed once.
