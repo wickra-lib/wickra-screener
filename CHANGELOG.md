@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The R `configure` scripts still defined `wkscreen_download`**, the last
+  trace of the screener's prefix — the CI-visible half of which already had to
+  be fixed once.
+
 - **Six SHA-pinned actions sat on two lines across the family**, and two of the
   splits were inside this repository. `actions/setup-node` is pinned at the same
   commit everywhere, but some call sites annotated it `# v6.4.0`; GitHub's tag
