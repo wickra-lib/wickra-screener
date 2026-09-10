@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The Ecosystem section repeated two claims their own repositories had already
+  corrected**: DARWIN at "millions of backtests per second" across "the
+  514-indicator space", where its benchmark says hundreds of thousands over the
+  registry, and GENOME as "a 514-dim live vector", where the dimension is
+  whatever the spec's feature list names.
+
 - **The banner alt text drifted in the Go binding's README.** Every other README
   in the repository carries the same sentence, so the picture reads the same
   wherever it is embedded; `bindings/go/README.md` described the Go binding
