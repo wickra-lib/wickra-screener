@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Six SHA-pinned actions sat on two lines across the family**, and two of the
+  splits were inside this repository. `actions/setup-node` is pinned at the same
+  commit everywhere, but some call sites annotated it `# v6.4.0`; GitHub's tag
+  list says that commit is **v7.0.0** and v6.4.0 is a different one. Dependabot
+  reads that comment to decide what to bump, so a wrong one misdirects the tool
+  meant to keep the pin current. `Swatinem/rust-cache` ran at two commits at
+  once, the older behind a floating `# v2`. Every pin now matches what the
+  sibling repositories run, each target checked against the upstream tag list.
+
+- **The CLI was published without ever being run in CI.** `release.yml` builds
+  and attaches `cli-binaries`, and five sibling repositories smoke-test their
+  binary on every push; this one did not, so a CLI that failed to start would
+  have been found by whoever downloaded it. The job runs a committed spec over
+  committed data in both output formats, asserting on real output rather than on
+  the exit code alone.
+
 - **The Ecosystem section repeated two claims their own repositories had already
   corrected**: DARWIN at "millions of backtests per second" across "the
   514-indicator space", where its benchmark says hundreds of thousands over the
