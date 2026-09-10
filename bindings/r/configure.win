@@ -13,7 +13,7 @@ set -e
 
 # A freshly-cut GitHub release can briefly return 404 while its assets propagate
 # across the CDN. Retry rather than giving up on the first miss.
-wkscreen_download() {
+fetch_release_archive() {
   _url="$1"
   _dest="$2"
   _attempt=1
@@ -58,7 +58,7 @@ else
   version=$(sed -n 's/^Version:[[:space:]]*//p' DESCRIPTION)
   url="https://github.com/wickra-lib/wickra-screener/releases/download/v${version}/wickra-screener-c-${triple}.tar.gz"
   echo "wickra-screener: downloading the C ABI ${triple} for v${version}"
-  wkscreen_download "${url}" "src/wickra-screener-c.tar.gz" || exit 1
+  fetch_release_archive "${url}" "src/wickra-screener-c.tar.gz" || exit 1
   "${R_HOME}/bin/Rscript" -e "untar('src/wickra-screener-c.tar.gz', exdir = 'src/wickra-screener-c')"
   inc="src/wickra-screener-c/wickra-screener-c-${triple}/include"
   lib="src/wickra-screener-c/wickra-screener-c-${triple}/lib"
