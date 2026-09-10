@@ -43,7 +43,7 @@ wickra-data = "1.0"
 # published while it stood: `cargo publish` resolves the registry version, not
 # the rev, so the crate that shipped would not have been the crate that was
 # tested.
-wickra-exchange = "0.1.1"
+wickra-exchange = "0.1.3"
 # The only name -> indicator registry in the ecosystem: the backtester's factory
 # resolves an indicator by name + params into an object-safe EvalIndicator, and
 # `registry::feed_of` reports which feed family that indicator consumes. Now on

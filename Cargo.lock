@@ -2851,9 +2851,9 @@ dependencies = [
 
 [[package]]
 name = "wickra-exchange"
-version = "0.1.1"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da0530822d5f58ed4555c2c7b7b95b62a756ae1d2b81cb7973d33ca7916d0980"
+checksum = "d3e3dcd2e47b9109238daa57973499107fa63ca284b08dbeedda89473c8e9496"
 dependencies = [
  "flate2",
  "futures-util",
@@ -2865,9 +2865,9 @@ dependencies = [
 
 [[package]]
 name = "wickra-exchange-core"
-version = "0.1.1"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dbc8a874c73315ae66626b7454c2e3bd6b79930fa20e50d26b3290a672a1d485"
+checksum = "7da1d108c609715a7e97102ee4600d46b467012e85591f91ca4564dda9a4e81d"
 dependencies = [
  "base64",
  "hex",
