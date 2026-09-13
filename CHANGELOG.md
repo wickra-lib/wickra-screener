@@ -18,9 +18,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The exported R functions are documented.** `wkscreen_new`, `wkscreen_command`
   and `wkscreen_version` carried roxygen comments but no generated `man/` pages,
   which `R CMD check` reported as a WARNING on every platform.
-
-### Fixed
-
 - **`actionlint` failed on five shell constructs the screener had already
   fixed.** `a && b || c` is not if-then-else -- when the publish succeeded but
   the echo failed, the fallback branch ran and reported "already published";
