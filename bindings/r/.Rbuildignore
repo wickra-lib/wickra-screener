@@ -24,3 +24,4 @@
 # its absence is a broken checkout; that is true in a repository and false in a
 # tarball, and it took 0.1.2 to 0 of 13 platform binaries.
 ^tests/golden\.R$
+^src/libwickra_screener\.a$
