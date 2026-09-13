@@ -38,16 +38,33 @@ fetch_release_archive() {
   return 1
 }
 
-# WebAssembly (r-universe's webR target) is not supported and says so rather
-# than failing further in with a link error. The scan core itself compiles to
-# wasm -- the wasm binding proves it, with default features off -- but no
-# emscripten C ABI archive is published for this configure to fetch, and
-# building one from source here would compile a toolchain path nothing tests.
-# The browser build is shipped as the wasm npm package instead.
+# WebAssembly (r-universe / webR): there is no prebuilt wasm C ABI to download,
+# but the build image ships cargo (/usr/local/cargo/bin) and emscripten
+# (EMSDK on PATH), so build the C ABI staticlib from source for
+# wasm32-unknown-emscripten right here, from the release tag this package's
+# version names. Building it in the same image with the same emscripten
+# avoids any ABI/version mismatch a prebuilt lib would risk. Default features
+# are off (threads, where a crate has them): the computation is serial there
+# and functionally identical.
 if [ "$(uname -s)" = "Emscripten" ]; then
-  echo "wickra-screener: no WebAssembly build -- no emscripten C ABI archive is published."
-  echo "wickra-screener: the browser build is published separately as the wickra-screener-wasm npm package."
-  exit 1
+  version=$(sed -n 's/^Version:[[:space:]]*//p' DESCRIPTION)
+  echo "wickra-screener: building C ABI from source for wasm32-unknown-emscripten (v${version})"
+  build=$(mktemp -d)
+  url="https://github.com/wickra-lib/wickra-screener/archive/refs/tags/v${version}.tar.gz"
+  fetch_release_archive "${url}" "${build}/src.tar.gz" || exit 1
+  "${R_HOME}/bin/Rscript" -e "untar('${build}/src.tar.gz', exdir = '${build}')"
+  root="${build}/wickra-screener-${version}"
+  rustup target add wasm32-unknown-emscripten 2>/dev/null || true
+  ( cd "${root}" && cargo build -p wickra-screener-c --release \
+      --target wasm32-unknown-emscripten --no-default-features ) \
+    || { echo "wickra-screener: cargo wasm build failed"; exit 1; }
+  cp "${root}/bindings/c/include/wickra_screener.h" src/wickra_screener.h
+  cp "${root}/target/wasm32-unknown-emscripten/release/libwickra_screener.a" src/libwickra_screener.a
+  rm -rf "${build}"
+  # The static archive is linked into the package object; no shared lib to
+  # bundle and no rpath needed.
+  sed "s|@WKSCREEN_RPATH@||" src/Makevars.in > src/Makevars
+  exit 0
 fi
 
 if [ -n "${WKSCREEN_INC}" ] && [ -n "${WKSCREEN_LIB}" ]; then
