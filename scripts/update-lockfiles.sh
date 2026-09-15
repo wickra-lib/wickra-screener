@@ -40,7 +40,7 @@ echo "==> Node (bindings/node, examples/node)"
 (cd examples/node && npm install --package-lock-only --no-audit --no-fund)
 
 echo "==> Python (.github/requirements/*.txt via uv)"
-UV_VERSION="0.12.12"
+UV_VERSION="0.12.13"
 # sha256 of the release archive for each supported host, taken from
 # https://github.com/astral-sh/uv/releases/download/<version>/<archive>.sha256
 uv_sha256() {
