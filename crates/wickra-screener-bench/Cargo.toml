@@ -19,7 +19,7 @@ default = ["parallel"]
 parallel = ["wickra-screener-core/parallel"]
 
 [dependencies]
-wickra-screener-core = { path = "../wickra-screener-core", version = "0.1.4", default-features = false }
+wickra-screener-core = { path = "../wickra-screener-core", version = "0.1.5", default-features = false }
 
 [dev-dependencies]
 criterion.workspace = true
