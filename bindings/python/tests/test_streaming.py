@@ -17,12 +17,14 @@ streaming envelope carries per bar, and ``derived_breadth`` needs the market
 panel, which a streaming screener cannot derive: it sees one symbol's bar at a
 time and cannot know which other symbols print at that timestamp. That is a
 documented limitation (``docs/CROSS_SECTION.md``), not something to hide here.
+
+Plain functions and plain asserts, so the module runs unchanged under pytest
+(3.10 and up) and under ``run_without_pytest.py`` (the 3.9 row). A missing
+corpus is a failure, not a skip.
 """
 
 import json
 import pathlib
-
-import pytest
 
 from wickra_screener import Screener
 
@@ -51,24 +53,22 @@ def _feed_all(screener: Screener, data: dict) -> None:
             )
 
 
-@pytest.mark.skipif(not (GOLDEN / "specs").exists(), reason="golden fixtures absent")
-@pytest.mark.parametrize("name", SPECS)
-def test_streaming_equals_batch(name: str) -> None:
-    spec_path = GOLDEN / "specs" / f"{name}.json"
-    assert spec_path.exists(), f"spec {name} is missing from the corpus"
-    spec = spec_path.read_text(encoding="utf-8")
+def test_streaming_equals_batch() -> None:
     data = _dataset()
+    for name in SPECS:
+        spec_path = GOLDEN / "specs" / f"{name}.json"
+        assert spec_path.exists(), f"spec {name} is missing from the corpus"
+        spec = spec_path.read_text(encoding="utf-8")
 
-    batch = Screener(spec).command(json.dumps({"cmd": "scan", "data": data})).strip()
+        batch = Screener(spec).command(json.dumps({"cmd": "scan", "data": data})).strip()
 
-    streaming = Screener(spec)
-    _feed_all(streaming, data)
-    streamed = streaming.command(json.dumps({"cmd": "evaluate"})).strip()
+        streaming = Screener(spec)
+        _feed_all(streaming, data)
+        streamed = streaming.command(json.dumps({"cmd": "evaluate"})).strip()
 
-    assert streamed == batch, f"streaming != batch for spec {name}"
+        assert streamed == batch, f"streaming != batch for spec {name}"
 
 
-@pytest.mark.skipif(not (GOLDEN / "specs").exists(), reason="golden fixtures absent")
 def test_reset_returns_to_the_pre_feed_state() -> None:
     spec = (GOLDEN / "specs" / "momentum.json").read_text(encoding="utf-8")
     data = _dataset()
