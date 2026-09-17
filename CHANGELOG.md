@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **wickra-backtest-core 0.1.6 and wickra-exchange 0.1.5, pinned exactly.** Both
+  were caret pins at 0.1.3 that `cargo update` could have moved and nobody did;
+  they now name the releases the family is on with the `=` every sibling uses,
+  and the lock follows. A cross-repo scan lined the 24 wickra-lib repositories
+  up, and the rest is what this one spelled differently: the Maven compiler and
+  surefire plugins one line behind (3.16.0 / 3.6.0), the fuzz job on a rolling
+  nightly rather than the family's pinned `nightly-2026-07-01`, and the example
+  job's `dotnet-version`, which now reads `8.0.x`.
+
 ### Fixed
 
 - **The Java binding loads the library it ships.** The jar carries the native
