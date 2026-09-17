@@ -41,7 +41,7 @@ This emits `pkg/` with the `.wasm` module and JS glue.
 ## Quick start
 
 ```js
-import init, { Screener, version } from "./pkg/wickra_screener_wasm.js";
+import init, { Screener, version } from "wickra-screener-wasm";
 
 await init();
 
