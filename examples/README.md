@@ -6,6 +6,15 @@ universe (`AAA` at 5, `BBB` at 15) and prints the report — so `BBB` matches. T
 examples are self-contained: the spec and candles are inline, so there is no
 shared `data/` directory to load (the golden fixtures live in [`../golden/`](../golden)).
 
+## What every example prints
+
+Every example prints the version and the scan report, for example:
+
+```text
+wickra-screener 0.1.5
+{"matches":[{"symbol":"BBB","matched":true,"values":{"price.close":15.0}}],"scanned":2}
+```
+
 ## Rust — `examples/rust/`
 
 As the CI examples job runs it, from the repository root:
