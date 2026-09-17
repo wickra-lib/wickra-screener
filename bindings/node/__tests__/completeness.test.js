@@ -8,6 +8,14 @@ const { test } = require("node:test");
 const assert = require("node:assert");
 const wickra = require("../index.js");
 
+// The napi-rs loader adds its own diagnostics to the module object
+// (`__napiBindingTarget` since @napi-rs/cli 3.10); they belong to the loader,
+// not to the binding's surface, and are left out of the comparison.
+const exported = () =>
+  Object.keys(wickra)
+    .filter((name) => !name.startsWith("__"))
+    .sort();
+
 test("module exposes Screener and version", () => {
   assert.strictEqual(typeof wickra.Screener, "function");
   assert.strictEqual(typeof wickra.version, "function");
@@ -27,7 +35,7 @@ test("Screener exposes command and version", () => {
 // one) fails here, matching the exact-surface guards in the Python and R
 // bindings.
 test("module surface is exactly {Screener, version}", () => {
-  assert.deepStrictEqual(Object.keys(wickra).sort(), ["Screener", "version"]);
+  assert.deepStrictEqual(exported(), ["Screener", "version"]);
 });
 
 test("Screener surface is exactly {command, version}", () => {
