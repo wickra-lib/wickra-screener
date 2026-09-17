@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://wickra.org"><img src="https://raw.githubusercontent.com/wickra-lib/.github/main/profile/wickra-banner.webp?v=514" alt="Wickra Screener — parallel multi-symbol screening over 497 streaming indicators" width="100%"></a>
+  <a href="https://wickra.org"><img src="https://raw.githubusercontent.com/wickra-lib/.github/main/profile/wickra-banner.webp?v=514-7" alt="Wickra Screener — parallel multi-symbol screening over 497 streaming indicators" width="100%"></a>
 </p>
 
 [![Built on Wickra](https://img.shields.io/badge/built%20on-wickra-3b82f6)](https://github.com/wickra-lib/wickra)
@@ -24,13 +24,13 @@
 
 ---
 
-# Wickra Screener
-
 **Scan thousands of symbols in parallel against data-driven conditions over 497 O(1) streaming indicators.**
 
-> **▶ Live demo:** all 514 indicators over real Binance market data, computed live in your browser — **[live.wickra.org](https://live.wickra.org)** · zero backend, powered by `wickra-wasm`.
+> **▶ Live demos:** the backtester compiled to WebAssembly, an equity curve building bar by bar — **[backtest-live.wickra.org](https://backtest-live.wickra.org)**;
+> one StrategySpec side by side in Python, Rust, JS and Go — **[playground.wickra.org](https://playground.wickra.org)**;
+> all 514 indicators of the core over a real Binance feed — **[live.wickra.org](https://live.wickra.org)**. Zero backend, all of them.
 
-> **Part of the [Wickra ecosystem](https://github.com/wickra-lib):** the same data-driven core and ten-language binding surface also power [wickra-exchange](https://github.com/wickra-lib/wickra-exchange), [wickra-backtest](https://github.com/wickra-lib/wickra-backtest), [wickra-terminal](https://github.com/wickra-lib/wickra-terminal) and 20 more — see [the full list](https://github.com/wickra-lib).
+**Part of the [Wickra ecosystem](#ecosystem):** the same data-driven core and ten-language binding surface also power [wickra-exchange](https://github.com/wickra-lib/wickra-exchange), [wickra-backtest](https://github.com/wickra-lib/wickra-backtest), [wickra-terminal](https://github.com/wickra-lib/wickra-terminal) and 20 more — see [the full list](https://github.com/wickra-lib).
 
 Wickra Screener is one data-driven core, [`wickra-screener-core`](crates/wickra-screener-core):
 a serde **condition tree** (`ScanSpec`) is folded over each symbol's history with
@@ -63,11 +63,11 @@ let report = screener.evaluate();
 
 ## Status
 
-**0.1.5 — the current release.** The core, the CLI, all ten language bindings, the
-byte-exact golden corpus, property + fuzz tests, benchmarks and one runnable
-example per language are in place and green across the full CI matrix
-(10 languages × 3 OS). [ROADMAP.md](ROADMAP.md) has what is done, what is open
-and what is not planned.
+**0.1.5 — the current release.** The core, the CLI, all ten language bindings,
+the byte-exact golden corpus, property + fuzz tests, benchmarks and one runnable
+example per language are in place and green across the full CI matrix (10
+languages × 3 OS). [ROADMAP.md](ROADMAP.md) has what is done, what is open and
+what is not planned.
 
 ## Documentation
 
@@ -170,13 +170,6 @@ fuzz/                   cargo-fuzz targets (spec_parse, condition_eval, scan_bat
 examples/               one runnable "scan a small universe" example per language
 ```
 
-## Building from source
-
-```bash
-cargo build --workspace
-cargo run -p wickra-screener -- --spec golden/specs/momentum.json --data golden/data
-```
-
 ## Building everything from source
 
 The Rust core, the CLI and the WASM package build from the workspace; each
@@ -185,6 +178,8 @@ binding has its own toolchain and builds on its own.
 ```bash
 # Rust core, CLI, C ABI, WASM crate
 cargo build --workspace --all-features
+# ...and the CLI over the golden corpus, as a smoke run
+cargo run -p wickra-screener -- --spec golden/specs/momentum.json --data golden/data
 
 # The fuzz crate is a detached workspace (cargo-fuzz builds it with sanitizer
 # flags on nightly), so --workspace does not reach it.
@@ -307,8 +302,20 @@ vulnerabilities privately — never in a public issue.
 
 ## License
 
-Dual-licensed under either [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE), at
-your option.
+Licensed under either of
+
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or
+  <http://www.apache.org/licenses/LICENSE-2.0>)
+- MIT license ([LICENSE-MIT](LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
+
+at your option. Use it, fork it, modify it, redistribute it — commercially or
+not — file issues, send pull requests; all welcome.
+
+### Contribution
+
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
+dual licensed as above, without any additional terms or conditions.
 
 ## Disclaimer
 

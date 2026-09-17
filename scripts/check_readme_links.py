@@ -14,11 +14,9 @@ read on GitHub far more than anywhere else, and that is the convention the main
 wickra repository uses too.
 
 The READMEs are found by walking `bindings/`, not by a fixed-depth glob. The
-sibling repositories keep every binding README at `bindings/<lang>/README.md`,
-but this one ships the C# text from `bindings/csharp/WickraScreener/README.md`,
-beside the csproj that names it in `<PackageReadmeFile>`. A `bindings/*/README.md`
-glob skips exactly that file -- the NuGet case this script's own docstring
-promises to cover -- and reports success while doing it.
+NuGet package packs `bindings/csharp/README.md` through `..\README.md` in the
+csproj, as wickra's does, so there is one C# README; walking still covers a
+README that appears beside a csproj later.
 
 Run from the repository root:  python scripts/check_readme_links.py
 """

@@ -92,7 +92,7 @@ Indicators use the backtest registry's PascalCase kinds (`Rsi`, `Roc`, `Ema`,
 sinusoidal universe never drives `close` below the lower band, so the RSI branch
 is the one that fires.
 
-## Bless (regenerate)
+## Blessing
 
 `expected/*.json` is the core's `command_json` output for `{"cmd":"scan",...}`
 over `data.json`, byte-for-byte. The Rust golden test writes any missing file and
