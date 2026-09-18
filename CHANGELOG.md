@@ -7,8 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-09-18
+
 ### Changed
 
+- **Family pins follow the owners' releases:** wickra-backtest-core =0.1.6 -> =0.1.7, wickra-exchange =0.1.5 -> =0.1.6. No code of this repository changes; the engine it links is the one those releases ship.
 - **wickra-backtest-core 0.1.6 and wickra-exchange 0.1.5, pinned exactly.** Both
   were caret pins at 0.1.3 that `cargo update` could have moved and nobody did;
   they now name the releases the family is on with the `=` every sibling uses,
@@ -682,7 +685,8 @@ three that worked went ahead anyway. There is no GitHub Release for `0.1.0`.
   either. Both yanked crates are now off their withdrawn releases (0.10.2 and
   0.14.1, same APIs), and all four checks pass against the wider graph.
 
-[Unreleased]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.5...HEAD
+[Unreleased]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.6...HEAD
+[0.1.6]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.2...v0.1.3

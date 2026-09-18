@@ -11,7 +11,7 @@ shared `data/` directory to load (the golden fixtures live in [`../golden/`](../
 Every example prints the version and the scan report, for example:
 
 ```text
-wickra-screener 0.1.5
+wickra-screener 0.1.6
 {"matches":[{"symbol":"BBB","matched":true,"values":{"price.close":15.0}}],"scanned":2}
 ```
 
