@@ -12,9 +12,6 @@
 # difference, and it belongs here with the reasoning rather than being silenced
 # by loosening the scan.
 
-[[IgnoredVulns]]
-id = "RUSTSEC-2026-0235"
-reason = """
 rkyv 0.7.46 is an optional dependency of rust_decimal, behind its `rkyv` feature.
 This workspace enables `serde` only, so no build links rkyv: `cargo tree -i rkyv
 --all-features --target all` reports nothing, and cargo-deny — which resolves
