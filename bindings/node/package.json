@@ -47,12 +47,12 @@
     "node": ">= 22"
   },
   "optionalDependencies": {
-    "wickra-screener-linux-x64-gnu": "0.1.6",
-    "wickra-screener-linux-arm64-gnu": "0.1.6",
-    "wickra-screener-darwin-x64": "0.1.6",
     "wickra-screener-darwin-arm64": "0.1.6",
-    "wickra-screener-win32-x64-msvc": "0.1.6",
-    "wickra-screener-win32-arm64-msvc": "0.1.6"
+    "wickra-screener-darwin-x64": "0.1.6",
+    "wickra-screener-linux-arm64-gnu": "0.1.6",
+    "wickra-screener-linux-x64-gnu": "0.1.6",
+    "wickra-screener-win32-arm64-msvc": "0.1.6",
+    "wickra-screener-win32-x64-msvc": "0.1.6"
   },
   "scripts": {
     "build": "napi build --platform --release",
@@ -62,6 +62,6 @@
     "test": "node --test"
   },
   "devDependencies": {
-    "@napi-rs/cli": "^3.9.0"
+    "@napi-rs/cli": "^3.10.4"
   }
 }
