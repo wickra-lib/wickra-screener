@@ -35,13 +35,15 @@ on macOS. Licensed under `MIT OR Apache-2.0`.
 
 ### Building from this repository (contributors)
 
-| Path | What it is |
-| --- | --- |
-| `WickraScreener/` | The published package. Its own `README.md` is the long description NuGet renders. |
-| `WickraScreener.Tests/` | xUnit suite: golden parity against the shared fixtures, the screener protocol, and the streaming path. |
+```bash
+cargo build -p wickra-screener-c --release       # produces the native wickra_screener library
+dotnet test bindings/csharp/WickraScreener.Tests
+dotnet run --project examples/csharp/Scan   # the runnable example
+```
 
-See [`WickraScreener/README.md`](https://github.com/wickra-lib/wickra-screener/blob/main/bindings/csharp/WickraScreener/README.md) for the full API walk-through,
-and [`examples/csharp/`](https://github.com/wickra-lib/wickra-screener/blob/main/examples/csharp) for a runnable program.
+Both the test project and the example copy the native library next to their
+output so the resolver finds it, on Windows, Linux and macOS. The package's
+long description on NuGet is this file.
 
 ## Quick start
 
