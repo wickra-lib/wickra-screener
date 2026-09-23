@@ -43,12 +43,12 @@ wickra-data = "1.0"
 # published while it stood: `cargo publish` resolves the registry version, not
 # the rev, so the crate that shipped would not have been the crate that was
 # tested.
-wickra-exchange = "=0.1.6"
+wickra-exchange = "=0.1.7"
 # The only name -> indicator registry in the ecosystem: the backtester's factory
 # resolves an indicator by name + params into an object-safe EvalIndicator, and
 # `registry::feed_of` reports which feed family that indicator consumes. Now on
 # crates.io, so the screener no longer carries a git dependency for it.
-wickra-backtest-core = "=0.1.7"
+wickra-backtest-core = "=0.1.8"
 # Workspace-internal crate, referenced by the CLI, bench and bindings.
 wickra-screener-core = { version = "0.1.7", path = "crates/wickra-screener-core" }
 # Serialization — the data-driven boundary (spec/command/report as JSON).

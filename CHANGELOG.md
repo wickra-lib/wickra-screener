@@ -22,15 +22,19 @@ the refreshed dependency tree and toolchain pins.
 
 ### Changed
 
-- **Built on wickra-core 1.0.5.** The lock takes the indicator core's latest
+- **Built on wickra-core 1.0.6.** The lock takes the indicator core's latest
   release; the `1.0` requirement already admitted it.
-- **Third-party dependencies refreshed.** `Cargo.lock` takes 120 crates to their
+- **The family pins follow the owners' releases.** `wickra-backtest-core` =0.1.7
+  -> =0.1.8, `wickra-exchange` =0.1.6 -> =0.1.7 -- the exact pins this
+  repository keeps on its siblings move to the versions those repositories
+  release in the same train, and every tracked lockfile follows.
+- **Third-party dependencies refreshed.** `Cargo.lock` takes 123 crates to their
   newest versions compatible with the Rust floor (the lock now resolves
   MSRV-aware, see below), run across the family in one pass so every repository
-  resolves the same day's versions. No manifest changed. The count includes
-  Dependabot's serde 1.0.229 and napi-group updates, and `yoke-derive` 0.8.3,
-  which keeps `synstructure` a single copy on 0.14 -- the version every sibling
-  resolves.
+  resolves the same day's versions. The refresh itself changes no manifest. The
+  count includes Dependabot's serde 1.0.229 and napi-group updates, and
+  `yoke-derive` 0.8.3, which keeps `synstructure` a single copy on 0.14 -- the
+  version every sibling resolves.
 - **The lockfile resolves for the Rust floor.** `.cargo/config.toml` sets
   `incompatible-rust-versions = "fallback"`, so `cargo update` takes the newest
   version the workspace's `rust-version` can build rather than the newest
