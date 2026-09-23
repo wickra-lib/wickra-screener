@@ -2718,7 +2718,7 @@ dependencies = [
 
 [[package]]
 name = "wickra-screener"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "clap",
  "serde_json",
@@ -2728,7 +2728,7 @@ dependencies = [
 
 [[package]]
 name = "wickra-screener-bench"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "codspeed-criterion-compat",
  "wickra-screener-core",
@@ -2736,14 +2736,14 @@ dependencies = [
 
 [[package]]
 name = "wickra-screener-c"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "wickra-screener-core",
 ]
 
 [[package]]
 name = "wickra-screener-core"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "proptest",
  "rayon",
@@ -2759,7 +2759,7 @@ dependencies = [
 
 [[package]]
 name = "wickra-screener-example"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "serde_json",
  "wickra-screener-core",
@@ -2767,7 +2767,7 @@ dependencies = [
 
 [[package]]
 name = "wickra-screener-node"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "napi",
  "napi-build",
@@ -2777,7 +2777,7 @@ dependencies = [
 
 [[package]]
 name = "wickra-screener-python"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "pyo3",
  "wickra-screener-core",
@@ -2785,7 +2785,7 @@ dependencies = [
 
 [[package]]
 name = "wickra-screener-wasm"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "wasm-bindgen",
  "wickra-screener-core",

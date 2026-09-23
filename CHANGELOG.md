@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-09-23
+
+A maintenance release: the screener and its bindings are unchanged. It publishes
+the refreshed dependency tree and toolchain pins.
+
+### Added
+
+- **The Node binding reports which artifact it loaded.** The loader generated
+  by `@napi-rs/cli` 3.10.4 exports `__napiBindingTarget` -- `'native'` for the
+  native addon, otherwise the WASI flavor it resolved -- and follows a
+  `NAPI_RS_NATIVE_LIBRARY_PATH` override to a WASI loader instead of
+  misreporting it as native. Typed in `index.d.ts`.
+
+### Changed
+
+- **Built on wickra-core 1.0.5.** The lock takes the indicator core's latest
+  release; the `1.0` requirement already admitted it.
+- **Third-party dependencies refreshed.** `Cargo.lock` takes 117 crates to their
+  newest semver-compatible versions, run across the family in one pass so every
+  repository resolves the same day's versions. No manifest changed. The count
+  includes Dependabot's serde 1.0.229 and napi-group updates, and
+  `yoke-derive` 0.8.3, which keeps `synstructure` a single copy on 0.14 -- the
+  version every sibling resolves.
+- **`@napi-rs/cli` 3.10.4** for the Node binding, the family's line.
+- **uv 0.12.18** for the lockfile bootstrap in `scripts/update-lockfiles.sh`,
+  with all four platform checksums moved together.
+- **The README's static badges are served by the organization** rather than
+  hot-linked from shields.io, so they no longer break when shields is down.
+
+### Fixed
+
+- **The C# README describes the layout that exists.** Its contributors section
+  listed the package and test directories as a table; it now gives the commands
+  that build the native library, run the xUnit suite and run the example.
+
 ## [0.1.6] - 2026-09-18
 
 ### Changed
@@ -171,7 +206,6 @@ reaches it through a tag.
   should not reason about the repository at all, which is the shape the other
   four repositories now share.
 
-
 ## [0.1.2] - 2026-09-04
 
 `0.1.1` reached crates.io, PyPI, npm and NuGet. Maven Central rejected it and
@@ -197,7 +231,6 @@ repository has hit: a line that could only ever run during a release.
   build reported success. `<waitUntil>published</waitUntil>` makes the job wait
   for the deployment to actually publish, so a failure after validation is
   visible here rather than nowhere.
-
 
 ## [0.1.1] - 2026-09-04
 
@@ -239,7 +272,6 @@ three that worked went ahead anyway. There is no GitHub Release for `0.1.0`.
   `wasm-publish`, so the tarball that reaches npm is the one the gate waited for.
   The publish step also gained the `./` prefix on the tarball path: npm reads a
   bare `dir/file.tgz` as an `owner/repo` shorthand and tries to clone it.
-
 
 ## [0.1.0] - 2026-09-04
 
@@ -685,7 +717,8 @@ three that worked went ahead anyway. There is no GitHub Release for `0.1.0`.
   either. Both yanked crates are now off their withdrawn releases (0.10.2 and
   0.14.1, same APIs), and all four checks pass against the wider graph.
 
-[Unreleased]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.6...HEAD
+[Unreleased]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.7...HEAD
+[0.1.7]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.3...v0.1.4
