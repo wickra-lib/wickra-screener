@@ -38,9 +38,11 @@ the refreshed dependency tree and toolchain pins.
 
 ### Fixed
 
-- **The C# README describes the layout that exists.** Its contributors section
-  listed the package and test directories as a table; it now gives the commands
-  that build the native library, run the xUnit suite and run the example.
+- **The C# README no longer links a file that never existed.** Its contributors
+  section named `bindings/csharp/WickraScreener/README.md` as the description
+  NuGet renders; the csproj packs `bindings/csharp/README.md` itself, and the
+  link check reported the 404 on every run. The section now gives the build,
+  test and example commands instead.
 
 ## [0.1.6] - 2026-09-18
 
