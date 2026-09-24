@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.8] - 2026-09-24
+
+A release-pipeline release: the screener and its bindings are the same code as
+0.1.7. It exists so that a complete release -- every package plus its build
+provenance and its GitHub Release -- stands on the current version.
+
+### Fixed
+
+- **A release can be finished by a re-run once Maven Central has the bundle.**
+  0.1.7's Maven step uploaded its bundle, then timed out after 30 minutes of
+  polling while Central went on to publish it. That skipped the jobs behind it
+  -- the build-provenance attestation and the GitHub Release -- and a re-run
+  would have failed on the duplicate. The Java job now looks the version up on
+  repo1.maven.org first and skips the deploy when it is there, building the jar
+  instead, as the family's other release workflows do. 0.1.7's release page was
+  completed from its run's own artifacts, but it carries no provenance
+  attestation; this release does.
+
 ## [0.1.7] - 2026-09-23
 
 A maintenance release: the screener and its bindings are unchanged. It publishes
@@ -734,7 +752,8 @@ three that worked went ahead anyway. There is no GitHub Release for `0.1.0`.
   either. Both yanked crates are now off their withdrawn releases (0.10.2 and
   0.14.1, same APIs), and all four checks pass against the wider graph.
 
-[Unreleased]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.7...HEAD
+[Unreleased]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.8...HEAD
+[0.1.8]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.7...v0.1.8
 [0.1.7]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.4...v0.1.5
