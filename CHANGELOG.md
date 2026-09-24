@@ -20,6 +20,16 @@ r-universe's WebAssembly target and its release pipeline re-runnable.
   exchange's Rust API changed between the two; 0.1.8 fixes its R package's
   WebAssembly build and its Maven Central step.
 
+### Fixed
+
+- **A release finished by a re-run keeps its sources and javadoc jars.** When
+  Maven Central already has the version, the Java job skips the deploy and
+  builds the jars for the release page itself. That build ran without the
+  release profile, which is what attaches the sources and javadoc jars, so such
+  a page would have lacked the two that a normal release carries. It now builds
+  with the profile; signing and upload lie past the package phase and do not
+  run.
+
 ## [0.1.8] - 2026-09-24
 
 A release-pipeline release: the screener and its bindings are the same code as
