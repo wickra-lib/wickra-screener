@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.9] - 2026-09-24
+
+A follow-up release: the screener and its bindings are unchanged. It pins
+wickra-exchange 0.1.8, the release that makes exchange's R package build on
+r-universe's WebAssembly target and its release pipeline re-runnable.
+
+### Changed
+
+- **Built on wickra-exchange 0.1.8.** The exact pin on `wickra-exchange` moves
+  from =0.1.7 to =0.1.8, and every tracked lockfile follows. Nothing in
+  exchange's Rust API changed between the two; 0.1.8 fixes its R package's
+  WebAssembly build and its Maven Central step.
+
 ## [0.1.8] - 2026-09-24
 
 A release-pipeline release: the screener and its bindings are the same code as
@@ -752,7 +765,8 @@ three that worked went ahead anyway. There is no GitHub Release for `0.1.0`.
   either. Both yanked crates are now off their withdrawn releases (0.10.2 and
   0.14.1, same APIs), and all four checks pass against the wider graph.
 
-[Unreleased]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.8...HEAD
+[Unreleased]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.9...HEAD
+[0.1.9]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.8...v0.1.9
 [0.1.8]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.7...v0.1.8
 [0.1.7]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.5...v0.1.6
