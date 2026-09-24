@@ -914,11 +914,13 @@ jobs:
           CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: mvn -B -f bindings/java -Prelease deploy -DskipTests
-      # The jar the attestation job signs has to exist whether or not this run
-      # deployed it.
-      - name: Build the jar when the deploy was skipped
+      # The jars the release page and the attestation job take have to exist
+      # whether or not this run deployed them. The release profile is what
+      # builds the sources and javadoc jars next to the main one; its signing
+      # (verify) and upload (deploy) phases lie past package, so neither runs.
+      - name: Build the jars when the deploy was skipped
         if: steps.central.outputs.published == 'true'
-        run: mvn -B -f bindings/java package -DskipTests
+        run: mvn -B -f bindings/java -Prelease package -DskipTests
       # Maven Central had the jar and the release page did not. Every other
       # artefact this workflow produces is attached there, and whoever wants to
       # check a build against its provenance should not have to visit a
