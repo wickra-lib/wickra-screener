@@ -36,14 +36,14 @@ Maven:
 <dependency>
   <groupId>org.wickra</groupId>
   <artifactId>wickra-screener</artifactId>
-  <version>0.1.9</version>
+  <version>0.2.0</version>
 </dependency>
 ```
 
 Gradle:
 
 ```kotlin
-implementation("org.wickra:wickra-screener:0.1.9")
+implementation("org.wickra:wickra-screener:0.2.0")
 ```
 
 The native library ships prebuilt per platform inside the jar and is
