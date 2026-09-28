@@ -40,15 +40,15 @@ echo "==> Node (bindings/node, examples/node)"
 (cd examples/node && npm install --package-lock-only --no-audit --no-fund)
 
 echo "==> Python (.github/requirements/*.txt via uv)"
-UV_VERSION="0.12.18"
+UV_VERSION="0.12.19"
 # sha256 of the release archive for each supported host, taken from
 # https://github.com/astral-sh/uv/releases/download/<version>/<archive>.sha256
 uv_sha256() {
   case "$1" in
-    x86_64-unknown-linux-gnu)  echo "89eadd7c76fc063887959510d5ba0ab1264dfd5f1143b925ddb73021a40acf16" ;;
-    aarch64-unknown-linux-gnu) echo "afb6291f3f0a6b4521fc67b947822506c41dde5b60d2189dd8f3695b2ac8c9e7" ;;
-    aarch64-apple-darwin)      echo "cf40e0c6a202190ccd9e0406dcfdd5b2d6668a9a5c779b17948963df32aafe5b" ;;
-    x86_64-apple-darwin)       echo "2e4108f5395397c8bc5d43bf83d3bdbb2d0e92b90d0efa607756be704905fa33" ;;
+    x86_64-unknown-linux-gnu)  echo "23bf5552d220e0842b65c862097b2ebaeba0064b74eda5e565e77fd25969d8c8" ;;
+    aarch64-unknown-linux-gnu) echo "0804e9b164c64b6914182d5920c08551958a095986f10a3731056df701126436" ;;
+    aarch64-apple-darwin)      echo "a9a8df1eedeb192f2e47e40e2faabfb387db4b850209118786d42f89dde3e0ba" ;;
+    x86_64-apple-darwin)       echo "cb5fa57bafe68fc0fb94b17f06bee0b0b9a7feb94ccbd110445afa0696e39273" ;;
     *)                         echo "" ;;
   esac
 }
