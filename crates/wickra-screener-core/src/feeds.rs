@@ -449,7 +449,7 @@ mod tests {
         .unwrap();
         let bar = core.bar(0);
         assert_eq!(bar.reference, None);
-        assert!(bar.trades.is_empty());
+        assert_eq!(bar.trades, []);
         assert_eq!(core.available(), Available::default());
     }
 

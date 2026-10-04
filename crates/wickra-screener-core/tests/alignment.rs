@@ -132,7 +132,7 @@ fn an_aligned_universe_has_nothing_stale() {
         ("CCC".to_string(), series(BARS, last, 120.0, 1.0).into()),
     ]);
     let report = scan_batch(data, &spec_with(always(close()))).expect("scan");
-    assert!(report.stale.is_empty());
+    assert_eq!(report.stale, Vec::<String>::new());
     let json = serde_json::to_string(&report).expect("serialize");
     assert!(!json.contains("stale"), "{json}");
 }

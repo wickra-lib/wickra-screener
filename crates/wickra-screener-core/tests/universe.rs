@@ -57,7 +57,7 @@ fn a_symbol_outside_the_universe_is_not_scanned() {
     assert_eq!(report.scanned, 2);
     let matched: Vec<&str> = report.matches.iter().map(|m| m.symbol.as_str()).collect();
     assert_eq!(matched, ["AAA", "BBB"]);
-    assert!(report.missing.is_empty());
+    assert_eq!(report.missing, Vec::<String>::new());
 }
 
 #[test]

@@ -315,8 +315,8 @@ fn a_scan_with_no_data_reports_no_staleness() {
     .expect("an empty dataset is a scan of nothing, not an error");
     assert_eq!(report.scanned, 0);
     assert_eq!(report.missing, [SYMBOL]);
-    assert!(report.stale.is_empty());
-    assert!(report.matches.is_empty());
+    assert_eq!(report.stale, Vec::<String>::new());
+    assert_eq!(report.matches, Vec::new());
 }
 
 /// Ranking by an expression that only some symbols can answer: the ones with a
