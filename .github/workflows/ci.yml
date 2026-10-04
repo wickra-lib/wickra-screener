@@ -185,7 +185,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: taiki-e/install-action@94c31af3204a9f15ab40b35ad084410b905bbc73 # v2.87.17
+      - uses: taiki-e/install-action@4cef1412cce204788f482e778a0b9187f9626a29 # v2.87.21
         with:
           tool: cargo-deny
       - run: cargo deny check
@@ -203,7 +203,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: taiki-e/install-action@94c31af3204a9f15ab40b35ad084410b905bbc73 # v2.87.17
+      - uses: taiki-e/install-action@4cef1412cce204788f482e778a0b9187f9626a29 # v2.87.21
         with:
           tool: osv-scanner
       - run: osv-scanner scan source --recursive .
@@ -291,7 +291,7 @@ jobs:
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
 
       - name: Install cargo-semver-checks
-        uses: taiki-e/install-action@94c31af3204a9f15ab40b35ad084410b905bbc73 # v2.87.17
+        uses: taiki-e/install-action@4cef1412cce204788f482e778a0b9187f9626a29 # v2.87.21
         timeout-minutes: 10 # fail fast on a stuck download instead of hanging the job
         with:
           tool: cargo-semver-checks
@@ -362,7 +362,7 @@ jobs:
           echo "::error::cargo fetch still failing after 5 attempts"
           exit 1
       - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@94c31af3204a9f15ab40b35ad084410b905bbc73 # v2.87.17
+        uses: taiki-e/install-action@4cef1412cce204788f482e778a0b9187f9626a29 # v2.87.21
         with:
           tool: cargo-llvm-cov
       # Both feature sets, merged into one report, and the CLI alongside the
@@ -430,7 +430,7 @@ jobs:
           echo "::error::cargo fetch still failing after 5 attempts"
           exit 1
       - name: Install cargo-fuzz
-        uses: taiki-e/install-action@94c31af3204a9f15ab40b35ad084410b905bbc73 # v2.87.17
+        uses: taiki-e/install-action@4cef1412cce204788f482e778a0b9187f9626a29 # v2.87.21
         with:
           tool: cargo-fuzz
       - name: Fuzz spec_parse (30 s)
@@ -597,7 +597,7 @@ jobs:
           echo "$out"
           echo "$out" | grep -q '"symbol":"BBB"'
 
-      - uses: r-lib/actions/setup-r@465b7d8e732ca3921382b1674c59bada9cbf3399 # v2.13.0
+      - uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2.14.0
         with:
           use-public-rspm: true
       - name: R
@@ -867,7 +867,7 @@ jobs:
           echo "::error::cargo fetch still failing after 5 attempts"
           exit 1
       - name: Install wasm-pack
-        uses: taiki-e/install-action@94c31af3204a9f15ab40b35ad084410b905bbc73 # v2.87.17
+        uses: taiki-e/install-action@4cef1412cce204788f482e778a0b9187f9626a29 # v2.87.21
         with:
           tool: wasm-pack
       - name: Build the wasm binding
@@ -959,7 +959,7 @@ jobs:
           echo "::error::cargo fetch still failing after 5 attempts"
           exit 1
       - name: Install cbindgen
-        uses: taiki-e/install-action@94c31af3204a9f15ab40b35ad084410b905bbc73 # v2.87.17
+        uses: taiki-e/install-action@4cef1412cce204788f482e778a0b9187f9626a29 # v2.87.21
         with:
           tool: cbindgen
       - name: Build the C ABI library (cdylib + staticlib)
@@ -1173,7 +1173,7 @@ jobs:
           exit 1
       - name: Build the C ABI library
         run: cargo build -p wickra-screener-c --release
-      - uses: r-lib/actions/setup-r@465b7d8e732ca3921382b1674c59bada9cbf3399 # v2.13.0
+      - uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2.14.0
         with:
           r-version: "release"
           use-public-rspm: true
