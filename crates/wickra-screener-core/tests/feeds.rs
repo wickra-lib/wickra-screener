@@ -545,7 +545,7 @@ fn a_malformed_streaming_feed_is_reported() {
 fn required_feeds_lists_what_a_spec_needs() {
     use wickra_screener_core::FeedKind;
 
-    assert!(spec_for("Rsi", vec![14.0]).required_feeds().is_empty());
+    assert_eq!(spec_for("Rsi", vec![14.0]).required_feeds(), Vec::new());
     assert_eq!(
         spec_for("Microprice", vec![]).required_feeds(),
         vec![FeedKind::OrderBook]

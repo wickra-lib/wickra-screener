@@ -245,5 +245,5 @@ fn unknown_field_yields_no_value_not_an_error() {
     .unwrap();
     let report = scan_batch(data(), &spec).expect("scan succeeds");
     assert_eq!(report.scanned, 1);
-    assert!(report.matches.is_empty());
+    assert_eq!(report.matches, Vec::new());
 }
