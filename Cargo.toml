@@ -19,7 +19,7 @@ members = ["crates/wickra-screener-core", "crates/screener-cli", "crates/wickra-
 exclude = ["fuzz"]
 
 [workspace.package]
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 rust-version = "1.86"
 license = "MIT OR Apache-2.0"
@@ -35,22 +35,22 @@ categories = ["finance", "command-line-utilities"]
 # Held at the same major as the copy `wickra-backtest-core` resolves, so the
 # tree carries one `wickra-core` and one set of indicator types rather than two
 # incompatible ones.
-wickra-core = "1.0"
-wickra-data = "1.0"
+wickra-core = "2.0"
+wickra-data = "2.0"
 # The exchange facade, used only by the optional `live` universe feature. It was
 # consumed from a git rev until its first crates.io release; that release is out,
 # so the pin is a plain version. A release of this repository could not have been
 # published while it stood: `cargo publish` resolves the registry version, not
 # the rev, so the crate that shipped would not have been the crate that was
 # tested.
-wickra-exchange = "=0.1.8"
+wickra-exchange = "=0.2.0"
 # The only name -> indicator registry in the ecosystem: the backtester's factory
 # resolves an indicator by name + params into an object-safe EvalIndicator, and
 # `registry::feed_of` reports which feed family that indicator consumes. Now on
 # crates.io, so the screener no longer carries a git dependency for it.
-wickra-backtest-core = "=0.1.9"
+wickra-backtest-core = "=0.2.0"
 # Workspace-internal crate, referenced by the CLI, bench and bindings.
-wickra-screener-core = { version = "0.2.0", path = "crates/wickra-screener-core" }
+wickra-screener-core = { version = "0.3.0", path = "crates/wickra-screener-core" }
 # Serialization — the data-driven boundary (spec/command/report as JSON).
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
