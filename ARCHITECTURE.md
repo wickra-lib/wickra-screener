@@ -109,7 +109,7 @@ holds no order-secret material.
 
 ## Stability commitments
 
-- **MSRV.** Workspace: Rust 1.86. Node binding: 1.88 (napi pins it).
+- **MSRV.** Workspace: Rust 1.87. Node binding: 1.88 (napi pins it).
 - **The `ScanSpec` schema.** Adding a new `Condition` or `Expr` variant is a
   minor change: serde rejects an unknown variant, so an older core refuses a
   newer spec loudly rather than mis-reading it. Removing or renaming a variant is

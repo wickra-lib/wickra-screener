@@ -21,7 +21,7 @@ exclude = ["fuzz"]
 [workspace.package]
 version = "0.3.0"
 edition = "2021"
-rust-version = "1.86"
+rust-version = "1.87"
 license = "MIT OR Apache-2.0"
 authors = ["wickra-lib"]
 repository = "https://github.com/wickra-lib/wickra-screener"

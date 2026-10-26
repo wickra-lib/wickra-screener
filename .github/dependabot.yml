@@ -150,7 +150,7 @@ updates:
       default-days: 7
     commit-message:
       prefix: "deps(actions)"
-    # dtolnay/rust-toolchain@<channel> pins a Rust toolchain (e.g. 1.86 for the
+    # dtolnay/rust-toolchain@<channel> pins a Rust toolchain (e.g. 1.87 for the
     # MSRV job), not an action version. Dependabot misreads the channel as a
     # version and proposes non-existent Rust releases. The toolchain pins are
     # managed manually with the MSRV policy.
