@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://wickra.org"><img src="https://raw.githubusercontent.com/wickra-lib/.github/main/profile/wickra-banner.svg?v=514-8" alt="Wickra Screener — parallel multi-symbol screening over 497 streaming indicators" width="100%"></a>
+  <a href="https://wickra.org"><img src="https://raw.githubusercontent.com/wickra-lib/.github/main/profile/wickra-banner.svg?v=514-8" alt="Wickra Screener — parallel multi-symbol screening over 495 streaming indicators" width="100%"></a>
 </p>
 
 [![Built on Wickra](https://raw.githubusercontent.com/wickra-lib/.github/main/profile/badges/wickra-screener/built-on.svg)](https://github.com/wickra-lib/wickra)
@@ -24,7 +24,7 @@
 
 ---
 
-**Scan thousands of symbols in parallel against data-driven conditions over 497 O(1) streaming indicators.**
+**Scan thousands of symbols in parallel against data-driven conditions over 495 O(1) streaming indicators.**
 
 > **▶ Live demos:** the backtester compiled to WebAssembly, an equity curve building bar by bar — **[backtest-live.wickra.org](https://backtest-live.wickra.org)**;
 > one StrategySpec side by side in Python, Rust, JS and Go — **[playground.wickra.org](https://playground.wickra.org)**;
@@ -34,8 +34,8 @@
 
 Wickra Screener is one data-driven core, [`wickra-screener-core`](crates/wickra-screener-core):
 a serde **condition tree** (`ScanSpec`) is folded over each symbol's history with
-the [Wickra](https://github.com/wickra-lib/wickra) indicator library — 497 of them
-resolvable by name — evaluated at the latest bar, and scanned across the whole
+the [Wickra](https://github.com/wickra-lib/wickra) indicator library — the 495
+indicators the backtest registry resolves by name — evaluated at the latest bar, and scanned across the whole
 universe in parallel (rayon) or sequentially (the WASM fallback) —
 **byte-for-byte identical**.
 
@@ -276,7 +276,7 @@ data-driven core with a CLI and the same ten-language binding surface:
 - [**wickra-impact**](https://github.com/wickra-lib/wickra-impact) — the backtester that knows you would have moved the market: agent-based fills on the real historical L2 order book
 - [**wickra-darwin**](https://github.com/wickra-lib/wickra-darwin) — evolutionary strategy search at hundreds of thousands of backtests per second, mutating and crossing JSON specs across the whole indicator registry
 - [**wickra-gym**](https://github.com/wickra-lib/wickra-gym) — a Gymnasium-compatible, microstructure-aware backtest environment with O(1) steps for deterministic RL rollouts
-- [**wickra-feature-store**](https://github.com/wickra-lib/wickra-feature-store) — OHLCV and microstructure streams into ML-ready feature matrices over 497 O(1) streaming indicators
+- [**wickra-feature-store**](https://github.com/wickra-lib/wickra-feature-store) — OHLCV and microstructure streams into ML-ready feature matrices over 495 O(1) streaming indicators
 - [**wickra-genome**](https://github.com/wickra-lib/wickra-genome) — a vector database of the whole market: every asset a live vector over the indicator registry, for similarity search, clustering and anomaly detection
 - [**wickra-timemachine**](https://github.com/wickra-lib/wickra-timemachine) — scrub the whole market like a video — every symbol, full order book, rewound to any moment via deterministic re-fold
 - [**wickra-synth**](https://github.com/wickra-lib/wickra-synth) — deterministic synthetic market microstructure: OHLCV, order book, trades and funding from a single seed
