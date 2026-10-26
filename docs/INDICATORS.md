@@ -4,7 +4,7 @@ An `indicator` expression resolves to the output of a [Wickra](https://github.co
 streaming indicator, computed over each symbol's history and read at the
 evaluated bar. Screener does not reimplement any indicator — it drives the shared
 registry, and what that registry resolves by name is what a scan can reference:
-**497** indicators today.
+**495** indicators today.
 
 The Wickra library ships more modules than that. The difference is the bar
 builders — Renko, Kagi, point-and-figure and the rest, which build bars rather
