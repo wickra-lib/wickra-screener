@@ -112,7 +112,7 @@ jobs:
       - run: cargo clippy --workspace --all-targets --no-default-features -- -D warnings
 
   msrv:
-    name: MSRV workspace (1.86)
+    name: MSRV workspace (1.87)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -121,7 +121,7 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-rust
         with:
-          toolchain: "1.86"
+          toolchain: "1.87"
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
 
       - name: Warm cargo registry (retry transient DNS/registry flakes)
@@ -141,7 +141,7 @@ jobs:
           exit 1
       # The Node binding (napi 3) needs Rust 1.88 and is checked separately; the
       # Python binding needs maturin's platform link flags and is built by the
-      # `python` job. The library, CLI, C ABI and WASM stay at 1.86.
+      # `python` job. The library, CLI, C ABI and WASM stay at 1.87.
       - run: >
           cargo build --workspace
           --exclude wickra-screener-python

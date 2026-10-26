@@ -245,7 +245,7 @@ to be read before it is committed.
 
 ## Requirements
 
-- **Rust** ≥ 1.86 (workspace MSRV; the Node binding needs ≥ 1.88).
+- **Rust** ≥ 1.87 (workspace MSRV; the Node binding needs ≥ 1.88).
 - Binding toolchains as needed: Node ≥ 22, Python ≥ 3.9, a C toolchain, .NET 8,
   JDK 22+, Go 1.23, R ≥ 4.1 — see each `bindings/<lang>/README.md`.
 

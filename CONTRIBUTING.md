@@ -64,7 +64,7 @@ operating systems, across both the default (rayon `parallel`) and
 `--no-default-features` (sequential / WASM) feature sets — a scan must produce a
 byte-identical report either way.
 
-The minimum supported Rust version is **1.86** for the workspace crates and
+The minimum supported Rust version is **1.87** for the workspace crates and
 **1.88** for `bindings/node` (napi 3); the `msrv` and `msrv-node` CI jobs enforce
 both. Please don't raise either without a dependency that actually requires it.
 
