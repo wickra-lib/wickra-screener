@@ -896,17 +896,23 @@ jobs:
       # the jobs behind it (assets, provenance, the GitHub Release) never run.
       - name: Skip the deploy when this version is already on Maven Central
         id: central
-        shell: bash
-        run: |
-          version=$(mvn -B -q -f bindings/java help:evaluate -Dexpression=project.version -DforceStdout)
-          url="https://repo1.maven.org/maven2/org/wickra/wickra-screener/${version}/wickra-screener-${version}.pom"
-          if curl -sSf -o /dev/null "$url"; then
-            echo "skip: org.wickra:wickra-screener:${version} is already on Maven Central"
-            echo "published=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "org.wickra:wickra-screener:${version} is not on Maven Central yet"
-            echo "published=false" >> "$GITHUB_OUTPUT"
-          fi
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          timeout_minutes: 30
+          max_attempts: 2
+          retry_wait_seconds: 30
+          shell: bash
+          command: |
+            set -eo pipefail
+            version=$(mvn -B -q -f bindings/java help:evaluate -Dexpression=project.version -DforceStdout)
+            url="https://repo1.maven.org/maven2/org/wickra/wickra-screener/${version}/wickra-screener-${version}.pom"
+            if curl -sSf -o /dev/null "$url"; then
+              echo "skip: org.wickra:wickra-screener:${version} is already on Maven Central"
+              echo "published=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "org.wickra:wickra-screener:${version} is not on Maven Central yet"
+              echo "published=false" >> "$GITHUB_OUTPUT"
+            fi
       - name: Deploy to Maven Central
         if: steps.central.outputs.published != 'true'
         env:
@@ -920,7 +926,13 @@ jobs:
       # (verify) and upload (deploy) phases lie past package, so neither runs.
       - name: Build the jars when the deploy was skipped
         if: steps.central.outputs.published == 'true'
-        run: mvn -B -f bindings/java -Prelease package -DskipTests
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          timeout_minutes: 30
+          max_attempts: 2
+          retry_wait_seconds: 30
+          shell: bash
+          command: mvn -B -f bindings/java -Prelease package -DskipTests
       # Maven Central had the jar and the release page did not. Every other
       # artefact this workflow produces is attached there, and whoever wants to
       # check a build against its provenance should not have to visit a
