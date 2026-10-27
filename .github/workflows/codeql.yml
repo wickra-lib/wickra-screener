@@ -96,7 +96,13 @@ jobs:
       # the native library is only needed to run, not to build.
       - name: Build the Java binding for the manual build mode
         if: matrix.language == 'java-kotlin'
-        run: mvn -B -f bindings/java package -DskipTests
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          timeout_minutes: 30
+          max_attempts: 2
+          retry_wait_seconds: 30
+          shell: bash
+          command: mvn -B -f bindings/java package -DskipTests
 
       - name: Perform CodeQL analysis
         uses: github/codeql-action/analyze@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0

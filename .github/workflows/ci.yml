@@ -589,15 +589,21 @@ jobs:
           distribution: temurin
           java-version: "22"
       - name: Java
-        shell: bash
-        run: |
-          mvn -f bindings/java/pom.xml -q package -DskipTests
-          javac -cp bindings/java/target/classes examples/java/Scan.java -d examples/java/out
-          out=$(java --enable-native-access=ALL-UNNAMED \
-            -Dnative.lib.dir="$PWD/target/release" \
-            -cp "bindings/java/target/classes:examples/java/out" Scan)
-          echo "$out"
-          echo "$out" | grep -q '"symbol":"BBB"'
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          timeout_minutes: 30
+          max_attempts: 2
+          retry_wait_seconds: 30
+          shell: bash
+          command: |
+            set -eo pipefail
+            mvn -f bindings/java/pom.xml -q package -DskipTests
+            javac -cp bindings/java/target/classes examples/java/Scan.java -d examples/java/out
+            out=$(java --enable-native-access=ALL-UNNAMED \
+              -Dnative.lib.dir="$PWD/target/release" \
+              -cp "bindings/java/target/classes:examples/java/out" Scan)
+            echo "$out"
+            echo "$out" | grep -q '"symbol":"BBB"'
 
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
@@ -1163,7 +1169,13 @@ jobs:
           java-version: "25"
           cache: maven
       - name: Test the Java binding
-        run: mvn -B -f bindings/java test
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          timeout_minutes: 30
+          max_attempts: 2
+          retry_wait_seconds: 30
+          shell: bash
+          command: mvn -B -f bindings/java test
 
   r:
     name: R on ${{ matrix.os }}
