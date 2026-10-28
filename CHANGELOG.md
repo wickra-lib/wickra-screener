@@ -7,18 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-10-28
+
+A maintenance release: the screener and its bindings are unchanged. It ships
+the security fixes in the dependency tree.
+
 ### Changed
 
+- **Built on wickra-core 2.1.0.** The lock takes the indicator core's minor
+  release; the `2.0` requirement already admitted it. It adds `RunningDrawdown`
+  and updates `MaxDrawdown` in amortised O(1) with the same values; nothing here
+  computes differently.
+- **The family pins follow the owners' releases.** `wickra-backtest-core` =0.2.0
+  -> =0.2.1, `wickra-exchange` =0.2.0 -> =0.2.1 -- the exact pins this
+  repository keeps on its siblings move to the versions those repositories
+  release in the same train, and every tracked lockfile follows.
 - **MSRV 1.87** (was 1.86) for the workspace; the Node binding stays at 1.88.
   wickra-exchange reaches `crypto-bigint` and `ctutils` through `p256`, and the
   releases that fix RUSTSEC-2026-0387 and RUSTSEC-2026-0385 require Rust 1.87.
   Every earlier crypto-bigint 0.7 release is yanked, so a fresh resolve could no
   longer build on 1.86.
+- **napi 3.15.0 with napi-derive 3.6.13** for the Node binding, moved together
+  with napi-derive-backend 6.1.6, napi-build 2.6.0 and napi-sys 3.4.1; the pair
+  Dependabot proposed on its own did not compile. `@napi-rs/cli` 3.10.8 builds
+  it. All five keep the binding's Rust 1.88 floor.
+- **pyo3 0.30.1** for the Python binding, and serde_json 1.0.154. pyo3 0.30
+  drops Python 3.8, which the wheels never supported: they still need Python 3.9
+  or later.
+- **central-publishing-maven-plugin 0.12.0** publishes the Java binding.
+- **uv 0.13.5** for the lockfile bootstrap in `scripts/update-lockfiles.sh`.
+- **The documentation quotes the indicator count this repository reaches:** the
+  495 indicators the backtest registry resolves -- bar builders, histogram
+  profiles and a few struct outputs are out of its scope -- rather than the
+  core's 514 or a stale 497. The counts are now set by the family's count
+  engine on every release bump.
 
 ### Security
 
 - **crypto-bigint 0.7.9, ctutils 0.4.6 and tokio 1.53.3** in the lockfile, for
   RUSTSEC-2026-0387, RUSTSEC-2026-0385 and RUSTSEC-2026-0386.
+- **rustls 0.23.46** in the lockfile, for RUSTSEC-2026-0346 to RUSTSEC-2026-0349:
+  TLS secrets in the `Debug` output of client session values, application data
+  sent to the outer server after an ECH rejection, Brotli certificate
+  decompression allocating before authentication, and a ServerHello downgrade to
+  classical key exchange.
+- **rustls-webpki 0.103.16 and webpki-roots 1.0.10** in the lockfile, for
+  RUSTSEC-2026-0382 and RUSTSEC-2026-0381: certificates chaining through the
+  distrusted emSign intermediates are refused.
 
 ## [0.3.0] - 2026-10-06
 
@@ -823,7 +858,8 @@ three that worked went ahead anyway. There is no GitHub Release for `0.1.0`.
   either. Both yanked crates are now off their withdrawn releases (0.10.2 and
   0.14.1, same APIs), and all four checks pass against the wider graph.
 
-[Unreleased]: https://github.com/wickra-lib/wickra-screener/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/wickra-lib/wickra-screener/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/wickra-lib/wickra-screener/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/wickra-lib/wickra-screener/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.9...v0.2.0
 [0.1.9]: https://github.com/wickra-lib/wickra-screener/compare/v0.1.8...v0.1.9
