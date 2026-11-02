@@ -206,7 +206,24 @@ jobs:
       - uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91 # v2.87.31
         with:
           tool: osv-scanner
-      - run: osv-scanner scan source --recursive .
+      # The --lockfile arguments are not redundant with --recursive. OSV-Scanner
+      # discovers lockfiles by *filename*, and neither ci-dev-py3.txt nor
+      # ci-dev-py39.txt matches a pattern it recognises, so the recursive walk
+      # skipped every hash-locked file in .github/requirements/ and the Python
+      # CI dependencies were never scanned. They are named after what they
+      # install, which is the right name for a reader and the wrong one for the
+      # scanner, so the format is stated explicitly instead of renaming them. A
+      # new file there needs a line here.
+      #
+      # --config is explicit for the same files: without it osv-scanner looks
+      # for a config next to each lockfile, none sits in .github/requirements/,
+      # and a waiver recorded in the root osv-scanner.toml would not apply
+      # there.
+      - run: >-
+          osv-scanner scan source --recursive --config=osv-scanner.toml
+          --lockfile=requirements.txt:.github/requirements/ci-dev-py3.txt
+          --lockfile=requirements.txt:.github/requirements/ci-dev-py39.txt
+          .
 
   # Advisory heads-up on link rot in the change itself; the weekly links.yml is
   # the full sweep. It can never turn a commit red: lychee runs with
