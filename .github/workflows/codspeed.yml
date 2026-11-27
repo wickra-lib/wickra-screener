@@ -24,6 +24,7 @@ on:
       - 'Cargo.lock'
       - '.github/workflows/codspeed.yml'
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: [main]
     paths:
       - 'crates/**'
@@ -37,6 +38,7 @@ permissions:
 
 jobs:
   benchmarks:
+    if: ${{ !github.event.pull_request.draft }}
     name: Instruction counts
     # CodSpeed ships valgrind for Ubuntu 22.04/24.04 only ("Unsupported system" on
     # 26.04, CodSpeedHQ/runner#544), so this job stays off ubuntu-latest until then.
