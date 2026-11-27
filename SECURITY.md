@@ -10,12 +10,12 @@ inventory and trust boundaries.
 
 ## Supported versions
 
-Security fixes are applied to the latest released version, `0.3.2`, only; please
+Security fixes are applied to the latest released version, `0.3.3`, only; please
 upgrade to the newest release before reporting an issue.
 
 | Version | Supported |
 |---------|-----------|
-| 0.3.2 (latest) | ✅ |
+| 0.3.3 (latest) | ✅ |
 
 ## Reporting a vulnerability
 
